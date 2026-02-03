@@ -127,7 +127,7 @@ const repoRoot = path.resolve(scriptDir, '..');
 const contractsRoot = path.join(repoRoot, 'contracts');
 const templateContractDir = path.join(contractsRoot, 'template');
 const newContractDir = path.join(contractsRoot, gameSlug);
-const studioFrontendDir = path.join(repoRoot, 'sgs_frontend');
+const frontendTemplateDir = path.join(repoRoot, 'frontend-template');
 const frontendSlug = `${gameSlug}-frontend`;
 const newFrontendDir = path.join(repoRoot, frontendSlug);
 
@@ -136,8 +136,8 @@ if (!existsSync(templateContractDir)) {
   process.exit(1);
 }
 
-if (!existsSync(studioFrontendDir)) {
-  console.error(`\n❌ Missing studio frontend at ${studioFrontendDir}`);
+if (!existsSync(frontendTemplateDir)) {
+  console.error(`\n❌ Missing frontend template at ${frontendTemplateDir}`);
   process.exit(1);
 }
 
@@ -186,7 +186,7 @@ console.log('  • Registering contract in workspace...');
 updateWorkspaceMembers(repoRoot, gameSlug);
 
 console.log('  • Generating standalone frontend...');
-copyDir(studioFrontendDir, newFrontendDir);
+copyDir(frontendTemplateDir, newFrontendDir);
 
 const frontendPackagePath = path.join(newFrontendDir, 'package.json');
 if (existsSync(frontendPackagePath)) {
@@ -199,15 +199,6 @@ if (existsSync(frontendPackagePath)) {
     delete pkg.scripts['build:docs'];
   }
   writeFileSync(frontendPackagePath, JSON.stringify(pkg, null, 2) + '\n');
-}
-
-const vitePath = path.join(newFrontendDir, 'vite.config.ts');
-if (existsSync(vitePath)) {
-  const viteText = readFileSync(vitePath, 'utf8');
-  const updated = viteText.replace(/envDir:\s*['"]\.\.['"]/g, "envDir: '.'");
-  if (updated !== viteText) {
-    writeFileSync(vitePath, updated);
-  }
 }
 
 const gamesDir = path.join(newFrontendDir, 'src', 'games');
@@ -225,6 +216,7 @@ const serviceFileBase = `${camelName}Service`;
 const cssFileBase = `${camelName}Game`;
 
 const gameComponent = `import { useMemo, useState } from 'react';
+import { useWallet } from '@/hooks/useWallet';
 import { ${serviceClassName} } from './${serviceFileBase}';
 import './${cssFileBase}.css';
 
@@ -243,6 +235,7 @@ export function ${componentName}({
   availablePoints,
   onGameComplete,
 }: ${componentName}Props) {
+  const { getContractSigner } = useWallet();
   const [sessionId, setSessionId] = useState(1);
   const [player2, setPlayer2] = useState('');
   const [player1Points, setPlayer1Points] = useState(10);
@@ -253,14 +246,21 @@ export function ${componentName}({
   const service = useMemo(() => new ${serviceClassName}(contractId), [contractId]);
 
   const handleStart = async () => {
+    if (!contractId) {
+      setError('Contract ID missing. Run bun run setup or update your config.');
+      return;
+    }
+
     setError(null);
     try {
+      const signer = getContractSigner();
       await service.startGame(
         sessionId,
         userAddress,
         player2,
         BigInt(player1Points),
-        BigInt(player2Points)
+        BigInt(player2Points),
+        signer
       );
       setStatus('started');
     } catch (err) {
@@ -269,9 +269,15 @@ export function ${componentName}({
   };
 
   const handleFinish = async () => {
+    if (!contractId) {
+      setError('Contract ID missing. Run bun run setup or update your config.');
+      return;
+    }
+
     setError(null);
     try {
-      await service.finishGame(sessionId, userAddress, true);
+      const signer = getContractSigner();
+      await service.finishGame(sessionId, userAddress, true, signer);
       setStatus('finished');
       onGameComplete();
     } catch (err) {
@@ -286,7 +292,7 @@ export function ${componentName}({
           <h3>${titleName}</h3>
           <p className="template-subtitle">Template game flow wired to Game Hub.</p>
         </div>
-        <div className={`template-status status-${status}`}>
+        <div className={\`template-status status-\${status}\`}>
           <span className="pulse-dot" aria-hidden="true" />
           <span>{status === 'idle' ? 'Ready' : status === 'started' ? 'In progress' : 'Completed'}</span>
         </div>
@@ -471,6 +477,9 @@ const gameStyles = `.template-game {
 
 const serviceFile = `import { Client as ${pascalName}Client } from './bindings';
 import { NETWORK_PASSPHRASE, RPC_URL, DEFAULT_METHOD_OPTIONS } from '@/utils/constants';
+import { contract } from '@stellar/stellar-sdk';
+
+type ClientOptions = contract.ClientOptions;
 
 /**
  * Service wrapper for ${titleName}
@@ -490,14 +499,30 @@ export class ${serviceClassName} {
     });
   }
 
+  private createSigningClient(
+    publicKey: string,
+    signer: Pick<ClientOptions, 'signTransaction' | 'signAuthEntry'>
+  ) {
+    const options: ClientOptions = {
+      contractId: this.contractId,
+      networkPassphrase: NETWORK_PASSPHRASE,
+      rpcUrl: RPC_URL,
+      publicKey,
+      ...signer,
+    };
+    return new ${pascalName}Client(options);
+  }
+
   async startGame(
     sessionId: number,
     player1: string,
     player2: string,
     player1Points: bigint,
-    player2Points: bigint
+    player2Points: bigint,
+    signer: Pick<ClientOptions, 'signTransaction' | 'signAuthEntry'>
   ) {
-    const tx: any = await this.baseClient.start_game(
+    const client = this.createSigningClient(player1, signer);
+    const tx: any = await client.start_game(
       {
         session_id: sessionId,
         player1,
@@ -515,8 +540,14 @@ export class ${serviceClassName} {
     return tx;
   }
 
-  async finishGame(sessionId: number, player: string, player1Won: boolean) {
-    const tx: any = await this.baseClient.finish_game(
+  async finishGame(
+    sessionId: number,
+    player: string,
+    player1Won: boolean,
+    signer: Pick<ClientOptions, 'signTransaction' | 'signAuthEntry'>
+  ) {
+    const client = this.createSigningClient(player, signer);
+    const tx: any = await client.finish_game(
       {
         session_id: sessionId,
         player,
@@ -579,8 +610,8 @@ writeFileSync(path.join(newGameDir, `${serviceFileBase}.ts`), serviceFile);
 writeFileSync(path.join(newGameDir, 'bindings.ts'), bindingsFile);
 
 const appTemplate = `import { config } from './config';
-import { LayoutStandalone } from './components/LayoutStandalone';
-import { useWalletStandalone } from './hooks/useWalletStandalone';
+import { Layout } from './components/Layout';
+import { useWallet } from './hooks/useWallet';
 import { ${componentName} } from './games/${gameSlug}/${componentName}';
 
 const GAME_ID = '${gameSlug}';
@@ -588,36 +619,37 @@ const GAME_TITLE = import.meta.env.VITE_GAME_TITLE || '${titleName}';
 const GAME_TAGLINE = import.meta.env.VITE_GAME_TAGLINE || 'On-chain game on Stellar';
 
 export default function App() {
-  const { publicKey, isConnected, isConnecting, error, connect, isWalletAvailable } = useWalletStandalone();
+  const { publicKey, isConnected, isConnecting, error, isDevModeAvailable } = useWallet();
   const userAddress = publicKey ?? '';
   const contractId = config.contractIds[GAME_ID] || '';
   const hasContract = contractId && contractId !== 'YOUR_CONTRACT_ID';
+  const devReady = isDevModeAvailable();
 
   return (
-    <LayoutStandalone title={GAME_TITLE} subtitle={GAME_TAGLINE}>
+    <Layout title={GAME_TITLE} subtitle={GAME_TAGLINE}>
       {!hasContract ? (
         <div className="card">
           <h3 className="gradient-text">Contract Not Configured</h3>
           <p style={{ color: 'var(--color-ink-muted)', marginTop: '1rem' }}>
-            Set the contract ID in <code>public/game-studio-config.js</code> (recommended) or in
-            <code>VITE_${envKey}_CONTRACT_ID</code>.
+            Run <code>bun run setup</code> to deploy and configure testnet contract IDs, or set
+            <code>VITE_${envKey}_CONTRACT_ID</code> in the root <code>.env</code>.
+          </p>
+        </div>
+      ) : !devReady ? (
+        <div className="card">
+          <h3 className="gradient-text">Dev Wallets Missing</h3>
+          <p style={{ color: 'var(--color-ink-muted)', marginTop: '0.75rem' }}>
+            Run <code>bun run setup</code> to generate dev wallets for Player 1 and Player 2.
           </p>
         </div>
       ) : !isConnected ? (
         <div className="card">
-          <h3 className="gradient-text">Connect Wallet</h3>
+          <h3 className="gradient-text">Connecting Dev Wallet</h3>
           <p style={{ color: 'var(--color-ink-muted)', marginTop: '0.75rem' }}>
-            Connect your wallet to start playing.
+            The dev wallet switcher auto-connects Player 1. Use the switcher to toggle players.
           </p>
           {error && <div className="notice error" style={{ marginTop: '1rem' }}>{error}</div>}
-          <div style={{ marginTop: '1.25rem' }}>
-            <button
-              onClick={() => connect().catch(() => undefined)}
-              disabled={!isWalletAvailable || isConnecting}
-            >
-              {isConnecting ? 'Connecting...' : 'Connect Wallet'}
-            </button>
-          </div>
+          {isConnecting && <div className="notice info" style={{ marginTop: '1rem' }}>Connecting...</div>}
         </div>
       ) : (
         <${componentName}
@@ -628,27 +660,17 @@ export default function App() {
           onGameComplete={() => {}}
         />
       )}
-    </LayoutStandalone>
+    </Layout>
   );
 }
 `;
 
 writeFileSync(path.join(newFrontendDir, 'src', 'App.tsx'), appTemplate);
 
-const walletShim = `export { useWalletStandalone as useWallet } from './useWalletStandalone';\n`;
-writeFileSync(path.join(newFrontendDir, 'src', 'hooks', 'useWallet.ts'), walletShim);
-
 const indexPath = path.join(newFrontendDir, 'index.html');
 if (existsSync(indexPath)) {
   const html = readFileSync(indexPath, 'utf8');
   let updatedHtml = html;
-  const scriptTag = '  <script src="/game-studio-config.js"></script>\n';
-  if (!updatedHtml.includes('game-studio-config.js')) {
-    updatedHtml = updatedHtml.replace(
-      /\n\s*<script type="module" src="\/src\/main\.tsx"><\/script>/,
-      `\n${scriptTag}    <script type="module" src="/src/main.tsx"></script>`
-    );
-  }
 
   if (updatedHtml.includes('<title>')) {
     updatedHtml = updatedHtml.replace(/<title>.*<\/title>/, `<title>${titleName}</title>`);
@@ -659,28 +681,11 @@ if (existsSync(indexPath)) {
   }
 }
 
-const publicDir = path.join(newFrontendDir, 'public');
-if (!existsSync(publicDir)) {
-  mkdirSync(publicDir, { recursive: true });
-}
-
-const runtimeConfig = {
-  rpcUrl: 'https://soroban-testnet.stellar.org',
-  networkPassphrase: 'Test SDF Network ; September 2015',
-  contractIds: {
-    [gameSlug]: 'YOUR_CONTRACT_ID',
-  },
-  simulationSourceAddress: '',
-};
-
-const configText = `window.__STELLAR_GAME_STUDIO_CONFIG__ = ${JSON.stringify(runtimeConfig, null, 2)};\n`;
-writeFileSync(path.join(publicDir, 'game-studio-config.js'), configText);
-
 console.log('✅ Contract and frontend created');
 console.log('Next steps:');
 console.log(`  1) Review contracts/${gameSlug}/src/lib.rs`);
 console.log(`  2) bun run build ${gameSlug}`);
 console.log(`  3) bun run deploy ${gameSlug}`);
 console.log(`  4) bun run bindings ${gameSlug}`);
-console.log(`  5) cd ${frontendSlug} && bun install`);
-console.log(`  6) cd ${frontendSlug} && bun run dev`);
+console.log(`  5) bun run dev:game ${gameSlug}`);
+console.log(`     (or cd ${frontendSlug} && bun install && bun run dev)`);
