@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { TwentyOneGame } from '../games/twenty-one/TwentyOneGame';
 import { NumberGuessGame } from '../games/number-guess/NumberGuessGame';
 import { DiceDuelGame } from '../games/dice-duel/DiceDuelGame';
@@ -31,7 +31,10 @@ const games = [
 ];
 
 export function GamesCatalog() {
-  const [selectedGame, setSelectedGame] = useState<string | null>(null);
+  const [selectedGame, setSelectedGame] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null;
+    return window.location.hash === '#docs' ? 'docs' : null;
+  });
   const { publicKey, isConnected, isConnecting, error } = useWallet();
 
   const userAddress = publicKey ?? '';
@@ -50,6 +53,15 @@ export function GamesCatalog() {
       target.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   };
+
+  useEffect(() => {
+    if (selectedGame === 'docs') {
+      window.location.hash = 'docs';
+    } else if (window.location.hash === '#docs') {
+      const next = `${window.location.pathname}${window.location.search}`;
+      window.history.replaceState(null, '', next);
+    }
+  }, [selectedGame]);
 
   if (selectedGame === 'docs') {
     return <Resources onBack={handleBackToGames} />;

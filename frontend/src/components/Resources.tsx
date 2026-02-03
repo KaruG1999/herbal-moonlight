@@ -25,7 +25,7 @@ export function Resources({ onBack }: ResourcesProps) {
         <div className="sidebar-content">
           {onBack && (
             <button className="nav-item back" onClick={onBack}>
-              ← Back to Studio
+              Back to Studio
             </button>
           )}
 
