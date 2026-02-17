@@ -1,0 +1,10 @@
+[package]
+name = "herbal-shared"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Shared types for Herbal Moonlight ZK circuits"
+
+[dependencies]
+serde = { workspace = true }
+sha2 = { workspace = true }

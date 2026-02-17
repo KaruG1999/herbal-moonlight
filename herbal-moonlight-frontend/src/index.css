@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Lora:ital,wght@0,400;0,600;1,600&display=swap");
 @import "tailwindcss/theme";
 @import "tailwindcss/utilities";
 
@@ -9,24 +9,24 @@
 }
 
 :root {
-  --font-display: "Fraunces", "Times New Roman", serif;
-  --font-serif: "Fraunces", "Times New Roman", serif;
-  --font-body: "Space Grotesk", "Helvetica Neue", Arial, sans-serif;
-  --font-mono: "IBM Plex Mono", "JetBrains Mono", monospace;
-  --color-bg: #f7f4ef;
+  --font-display: "Lora", "Times New Roman", serif;
+  --font-serif: "Lora", "Times New Roman", serif;
+  --font-body: "Inter", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "IBM Plex Mono", "Fira Code", "JetBrains Mono", monospace;
+  --color-bg: #f6f7f8;
   --color-surface: #ffffff;
-  --color-surface-warm: #f1e6d3;
-  --color-ink: #121212;
-  --color-ink-muted: #4b4b4b;
+  --color-surface-warm: #d6d2c4;
+  --color-ink: #0f0f0f;
+  --color-ink-muted: #3f3f3f;
   --color-accent: #fdda24;
-  --color-accent-strong: #0f4c3a;
-  --color-highlight: #ffe3b3;
-  --color-teal: #2bb6a1;
-  --color-border: rgba(18, 18, 18, 0.12);
-  --color-success: #2bb6a1;
+  --color-accent-strong: #002e5d;
+  --color-highlight: #b7ace8;
+  --color-teal: #00a7b5;
+  --color-border: rgba(15, 15, 15, 0.12);
+  --color-success: #00a7b5;
   --color-warning: #fdda24;
   --color-error: #c8463b;
-  --color-info: #1f5f8b;
+  --color-info: #002e5d;
   --radius-lg: 28px;
   --radius-md: 18px;
   --radius-sm: 12px;
@@ -46,8 +46,8 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   min-height: 100vh;
-  background: radial-gradient(1200px circle at 12% -10%, rgba(253, 218, 36, 0.2), transparent 65%),
-    radial-gradient(1000px circle at 85% 5%, rgba(43, 182, 161, 0.2), transparent 70%),
+  background: radial-gradient(1200px circle at 15% -10%, rgba(253, 218, 36, 0.2), transparent 65%),
+    radial-gradient(1000px circle at 85% 5%, rgba(183, 172, 232, 0.2), transparent 70%),
     var(--color-bg);
   color: var(--color-ink);
   line-height: 1.6;
@@ -107,42 +107,8 @@ button:disabled {
   box-shadow: none;
 }
 
-.button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.45rem;
-  padding: 0.7rem 1.5rem;
-  border-radius: var(--radius-sm);
-  font-weight: 600;
-  font-family: var(--font-body);
-  border: 1px solid var(--color-ink);
-  background: var(--color-accent);
-  color: var(--color-ink);
-  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
-}
-
-.button:hover {
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-tight);
-}
-
-.button.ghost {
-  background: #ffffff88;
-  border-color: var(--color-border);
-}
-
-.button.primary {
-  background: var(--color-accent);
-}
-
-.button.small {
-  padding: 0.55rem 1rem;
-  font-size: 0.85rem;
-}
-
 .btn-secondary {
-  background: #ffffff88;
+  background: transparent;
   color: var(--color-ink);
   border-color: var(--color-ink);
 }
@@ -196,38 +162,9 @@ select:focus {
   color: var(--color-info);
 }
 
-/* ── Herbal Moonlight game animations ─────────────────────────────── */
-
-@keyframes hm-fogPulse {
-  0%, 100% { opacity: 0.92; }
-  50%      { opacity: 0.72; }
-}
-
-@keyframes hm-creatureFloat {
-  0%, 100% { transform: translateY(0); }
-  50%      { transform: translateY(-5px); }
-}
-
-@keyframes hm-glow {
-  0%, 100% { box-shadow: inset 0 0 12px rgba(120,180,255,0.18), 0 0 6px rgba(120,180,255,0.12); }
-  50%      { box-shadow: inset 0 0 22px rgba(120,180,255,0.38), 0 0 14px rgba(120,180,255,0.28); }
-}
-
-@keyframes hm-fadeIn {
-  from { opacity: 0; transform: scale(0.85); }
-  to   { opacity: 1; transform: scale(1); }
-}
-
-@keyframes hm-hpWarn {
-  0%, 100% { opacity: 1; }
-  50%      { opacity: 0.55; }
-}
-
-@keyframes hm-victoryGlow {
-  0%, 100% { text-shadow: 0 0 8px rgba(250,204,21,0.4); }
-  50%      { text-shadow: 0 0 28px rgba(250,204,21,0.85); }
-}
-
-@keyframes hm-spin {
-  to { transform: rotate(360deg); }
+.gradient-text {
+  background: linear-gradient(120deg, var(--color-accent), var(--color-teal));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }

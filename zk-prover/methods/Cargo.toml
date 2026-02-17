@@ -1,0 +1,17 @@
+[package]
+name = "herbal-methods"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "RiscZero guest methods for Herbal Moonlight"
+
+[features]
+default = []
+# Dev mode: use mock ELF and ID instead of compiling guest
+dev = []
+
+[build-dependencies]
+risc0-build = { workspace = true }
+
+[package.metadata.risc0]
+methods = ["guest"]
