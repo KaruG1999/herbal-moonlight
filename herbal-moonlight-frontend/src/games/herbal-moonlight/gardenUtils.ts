@@ -24,6 +24,18 @@ export const PLANT_EMOJI: Record<number, string> = {
   3: '\u2620\uFE0F', // skull for Mandrake
 };
 
+/** Pixel-art sprite paths — served from public/assets/ */
+export const PLANT_IMG: Record<number, string> = {
+  0: '',
+  1: '/assets/lavender.png',
+  2: '/assets/mint.png',
+  3: '/assets/mandrake.png',
+};
+
+export const CREATURE_IMG = '/assets/ghost.png';
+export const DIED_IMG = '/assets/died.png';
+export const WITCH_IMG = '/brujita.png';
+
 export const PLANT_DAMAGE: Record<number, number> = {
   1: 1,
   2: 2,

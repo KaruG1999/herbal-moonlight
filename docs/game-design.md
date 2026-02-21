@@ -1,27 +1,37 @@
-🌙 Herbal Moonlight - Game Design Document
-🎯 One-Sentence Pitch
-Asymmetric strategy game where Zero-Knowledge Proofs enable hidden garden defense - you prove you blocked your opponent without revealing your full strategy.
+# 🌙 Herbal Moonlight - Game Design Document
+**Version:** 2.1 (Implementation-Verified)
+**Status:** MVP deployed on Stellar Testnet
 
-🎮 Core Concept
-Genre: Asymmetric 2-player strategy (tower defense meets hidden information)
-Aesthetic: Witchy cottage core with pixel art - cozy but competitive
-Session Length: 5-7 turns (~5-10 minutes per game)
-Platform: Web-based on Stellar blockchain with ZK proofs via RiscZero
+## 🎯 One-Sentence Pitch
+Asymmetric strategy game where Zero-Knowledge Proofs enable **permanent hidden information** — your garden strategy stays secret forever, even after the game ends.
 
-👥 Players & Roles
-Player 1: The Gardener 🌿
+## 🔑 Why This Beats the Competition
+> "Can this game exist WITHOUT Zero-Knowledge Proofs?"
+> **Answer: NO.** Without ZK you must choose between a trusted server (can cheat) OR full garden revelation (strategies become public). ZK is the ONLY way to have verifiable fairness + permanent privacy simultaneously.
 
-Goal: Defend your house by blocking the Creature's path
-Setup: Place 7 medicinal plants secretly on a 5x5 grid
-Mechanic: Generate ZK proofs to reveal cells when attacked
-Win Condition: Reduce Creature HP to 0 OR block all possible paths
+**Key Differentiator:** Unlike ZK Poker or ZK Battleship clones, our garden is **never fully revealed** — not even post-game. This makes the strategy a cryptographic asset: reusable, sellable, and eternally private.
 
-Player 2: The Creature 👻
+---
 
-Goal: Reach the Gardener's house (bottom row)
-Setup: No setup - enters from top row
-Mechanic: Choose path through fog of war, optionally use Spirit Sense
-Win Condition: Reach row 4 (Gardener's house) with >0 HP
+## 🎮 Core Concept
+- **Genre:** Asymmetric 2-player strategy (tower defense meets hidden information)
+- **Aesthetic:** Witchy cottagecore — cozy but cryptographically ruthless
+- **Session Length:** 5-7 turns (~5-10 minutes)
+- **Platform:** Stellar Testnet (Soroban) + RiscZero ZK proofs
+
+## 👥 Players & Roles
+
+**Player 1: The Gardener 🌿 (Witch)**
+- Goal: Defend the cottage by placing hidden plants on a 5×5 grid
+- Setup: Place **up to 8 plants** secretly before the game starts
+- Mechanic: Commit SHA-256 hash of garden on-chain. When Creature lands on a cell, generate a ZK proof revealing only that cell's content — the full garden **stays permanently hidden**
+- Win Condition: Reduce Creature HP to 0
+
+**Player 2: The Creature 👻 (Ghost)**
+- Goal: Reach row 4 (the Gardener's house) with HP > 0
+- Setup: None — enters from the top row (row 0)
+- Mechanic: Navigate through full fog of war. Only sees the ghost's current position. Cells are never visually revealed (even after being stepped on)
+- Win Condition: Reach row 4 alive
 
 
 🗺️ Game Board
@@ -42,41 +52,29 @@ Grid: 5x5 cells
 Movement: Creature advances row-by-row (top to bottom)
 Each turn: Optional lateral move (left/right) + mandatory forward move
 
-🌱 Plant Types (Defender Units)
-🌸 Baby Lavender
+## 🌱 Plant Types (Defender Units)
 
-Role: Support/Heal
-Damage: 1 HP
-Special: "Calming Mist" - reduces next attack damage
-Visual: Purple flowers with sleepy face
+| Plant | Emoji | Damage | Special (Designed) | Status |
+|-------|-------|--------|-------------------|--------|
+| Baby Lavender | 💜 | **1 HP** | "Calming Mist" — reduces damage of next plant hit by 1 | Damage ✅ / Special ⏳ |
+| Baby Mint | 🌿 | **2 HP** | "Fresh Blast" — straightforward strike | ✅ Implemented |
+| Baby Mandrake | ☠️ | **3 HP** | "Root Strike" — highest damage, maximum threat | ✅ Implemented |
 
-🍃 Baby Mint
+**Plant Placement:** Gardener places **up to 8 plants** during setup phase (configurable via `MAX_PLANTS`).
 
-Role: DPS (Damage)
-Damage: 2 HP
-Special: "Fresh Blast" - standard attack
-Visual: Green pointed leaves with alert eyes
+> **Design Note:** Lavender's "Calming Mist" debuff is designed but not yet active on-chain — currently deals 1 HP flat. Implementation tracked in `docs/PENDING_FEATURES.md`.
 
-🌰 Baby Mandrake
+## 👻 Creature
 
-Role: Tank/Blocker
-Damage: 1 HP
-Special: "Root Shield" - high effective HP (counts as 3 HP toward blocking)
-Visual: Round root body with crossed arms
+**Current MVP: Ghost 👻**
+- Starting HP: **6** (Balanced/New Moon) | **8** (Full Moon)
+- Movement: 1 step forward per turn; may move laterally within the same row before advancing
+- Sprite: `ghost.png` (pixel art)
+- Special Abilities: Spirit Sense (designed, pending implementation — see `docs/PENDING_FEATURES.md`)
 
-Plant Placement: Gardener places 7 plants total during setup phase
-
-👻 Creature Types
-🦊 Spirit Fox (MVP - solo este)
-
-Starting HP: 6
-Movement: Standard (1 forward + optional 1 lateral per turn)
-Special Abilities: Spirit Sense (costs HP)
-
-Future creatures (post-MVP):
-
-🦋 Moon Moth: Can skip cells (Flutter ability)
-🐺 Shadow Wolf: Higher HP, slower
+**Post-hackathon creatures (roadmap):**
+- 🦋 Moon Moth: Can skip one row (Flutter ability)
+- 🐺 Shadow Wolf: Higher HP, slower movement
 
 
 📜 Game Flow (Turn-by-Turn)
@@ -186,17 +184,15 @@ Creature wins if:
 "Equilibrium between worlds"
 - Standard rules
 - All costs normal
-Implementation:
-rustpub fn get_moon_phase(env: Env, session_id: u32) -> MoonPhase {
-    let seed = (session_id as u64)
-        .wrapping_mul(env.ledger().sequence() as u64);
-    
-    match seed % 100 {
-        0..=19 => MoonPhase::FullMoon,
-        20..=39 => MoonPhase::NewMoon,
-        _ => MoonPhase::Balanced,
-    }
-}
+**Implementation (actual, on-chain):**
+```rust
+// Moon phase derived from keccak256(session_id) — deterministic, not time-based
+// session_id byte 0 % 5:
+//   0     → FullMoon  (20%)
+//   1     → NewMoon   (20%)
+//   2,3,4 → Balanced  (60%)
+```
+> ⚠️ **Correction from v1:** Moon phase uses `keccak256(session_id)` for deterministic randomness — NOT `ledger().sequence()`. This ensures both players see the same phase regardless of when they query it.
 ```
 
 ---
@@ -301,41 +297,41 @@ Gardener must reveal next cell for FREE
 
 ---
 
-## 🏆 Post-Game: Garden Autopsy
+## 🏆 Post-Game: Permanent Fog (Never Reveal)
 
-**"Among Us" style reveal moment:**
+**Core Design Decision:** The garden is **NEVER fully revealed** — not even after the game ends. This is not a limitation; it is the central innovation.
+
 ```
 ═══════════════════════════════════
 🎉 GARDENER WINS! 🎉
 ═══════════════════════════════════
 
-Final Garden Layout Revealed:
+Game Board (only stepped cells visible):
 ┌─┬─┬─┬─┬─┐
-│ │🌸│ │ │ │  
+│?│?│?│?│?│  ← fog
 ├─┼─┼─┼─┼─┤
-│ │ │🌱│ │ │  ← You hit this (Turn 2)
+│?│💜│?│?│?│  ← Turn 1: Lavender (1 dmg)
 ├─┼─┼─┼─┼─┤
-│🌰│ │ │ │🌸│  ← Would've killed you!
+│?│?│☠️│?│?│  ← Turn 3: Mandrake (3 dmg) — lethal!
 ├─┼─┼─┼─┼─┤
-│ │🥜│ │🥜│ │  ← NEVER FOUND
+│?│?│?│?│?│  ← NEVER REVEALED — stays secret
 ├─┼─┼─┼─┼─┤
-│ │ │🌰│ │ │  ← House
+│🏠│🏠│🏠│🏠│🏠│ ← Cottage row
 └─┴─┴─┴─┴─┘
 
-💀 "You were 1 move from winning!"
+📊 Session Stats:
+- Cells stepped: 3/25 (12%)
+- Cells forever hidden: 22/25 (88%)
+- Creature HP remaining: 0
+```
 
-📊 Stats:
-- Cells revealed: 3/25 (12%)
-- HP wasted on empty: 0
-- Optimal path existed: ✅
-- Bluff success rate: 2/3
+**Why Never Reveal:**
+- ✅ ZK is genuinely essential (not decorative) — without it you CAN'T hide the garden verifiably
+- ✅ Gardener's strategy becomes a **reusable cryptographic asset** (future: Strategy Vault)
+- ✅ Creates permanent tension: "What was behind those other cells?"
+- ✅ Differentiates from every other "ZK hidden information" game (they all reveal post-game)
 
-[Rematch] [Share Replay]
-Why this matters:
-
-✅ Shareable "wow" moment
-✅ Learning opportunity
-✅ Showcases ZK magic (full reveal only AFTER game)
+> **v1 doc error corrected:** A previous design draft described a "Garden Autopsy" full reveal post-game. This was rejected. The current implementation correctly shows ONLY cells the Creature actually stepped on.
 
 
 🎨 Visual Design
@@ -364,28 +360,46 @@ css--night-sky: #1A237E → #5E35B1 (gradient)
 
 ---
 
-## 🛠️ Tech Stack
+## 🛠️ Tech Stack (Current)
 
 ### **Blockchain Layer:**
-- **Smart Contracts:** Soroban (Stellar)
+- **Smart Contracts:** Soroban (Rust) — Stellar Protocol 25
 - **Network:** Stellar Testnet
 - **Game Hub:** `CB4VZAT2U3UC6XFK3N23SKRF2NDCMP3QHJYMCHHFMZO7MRQO6DQ2EMYG`
+- **Herbal Moonlight Contract:** `CCHDXLBZ73N7XHZKAEH3G6K3NQELAYASM3XU46A2TWHQX5AASEPN7WY2`
+- **Groth16 Verifier:** `CCV7EJ77WV4PN5RXQ2O4HPIOCNZI3WFFDGMWGMPWS2WCQ2PSVQQE777T`
 
 ### **Zero-Knowledge:**
-- **zkVM:** RiscZero
-- **Proof System:** Groth16 (via Nethermind verifier)
-- **Hash Function:** SHA256 (ZK-friendly)
+- **zkVM:** RiscZero (guest + host in `zk-prover/`)
+- **Proof System:** Groth16 via BN254 precompiles (Stellar Protocol 25 / CAP-0074)
+- **Hash Function:** SHA256 (commitment) — Poseidon available via Protocol 25 for future optimization
+- **Current Mode:** Dev mode (hash-only verification) → Production mode (full Groth16) on roadmap
 
 ### **Frontend:**
-- **Framework:** React + TypeScript (via Stellar Game Studio)
-- **Styling:** TailwindCSS
-- **Wallet:** Freighter / Stellar Wallets Kit
-- **Build:** Vite
+- **Framework:** React 19 + TypeScript
+- **Styling:** TailwindCSS + custom CSS (dirt tile gradients, board shake, fog of war)
+- **Wallet:** Dev wallet switcher (2-player local); Freighter for production
+- **Build:** Vite (standalone `herbal-moonlight-frontend/`)
 
-### **Backend:**
-- **Prover Service:** Node.js
-- **RiscZero Host:** Rust binary
-- **API:** REST endpoints for proof generation
+### **Repo Structure (current):**
+```
+Stellar-Game-Studio/
+├── contracts/
+│   ├── herbal-moonlight/     # Main game contract (Rust, ~680 lines)
+│   ├── groth16-verifier/     # BN254 Groth16 verifier (Protocol 25)
+│   └── mock-game-hub/        # Local test Game Hub
+├── herbal-moonlight-frontend/ # React standalone frontend
+│   └── src/games/herbal-moonlight/
+│       ├── HerbalMoonlightGame.tsx  # 1720 lines — main component
+│       ├── LandingScreen.tsx        # Pre-game + ZK tutorial
+│       ├── herbalMoonlightService.ts
+│       ├── gardenUtils.ts
+│       └── bindings.ts
+├── zk-prover/                # RiscZero host + guest (local prover)
+├── bindings/herbal_moonlight/ # Generated TS bindings
+├── scripts/                  # deploy, build, bindings, setup
+└── docs/                     # This file + ZK implementation doc
+```
 
 ---
 
@@ -463,56 +477,86 @@ MVP Cuts:
 
 ---
 
-## 🚀 MVP Feature List
+## 🚀 MVP Feature Status
 
-### **MUST HAVE (Core):**
-1. ✅ 5x5 grid gameplay
-2. ✅ 3 plant types functional
-3. ✅ 1 creature type (Spirit Fox)
-4. ✅ ZK commitment + reveal working
-5. ✅ Game Hub integration (start/end game)
-6. ✅ Win/lose conditions enforced
-7. ✅ Wallet switching (dev mode)
+### **MUST HAVE — Core (Implemented ✅)**
+1. ✅ 5×5 grid gameplay with fog of war
+2. ✅ 3 plant types (Lavender 1dmg, Mint 2dmg, Mandrake 3dmg)
+3. ✅ Ghost creature (navigates blind)
+4. ✅ SHA-256 garden commitment + selective ZK reveal (dev mode: hash-only, no full Groth16)
+5. ✅ Game Hub integration (`start_game` / `end_game` on-chain)
+6. ✅ Win/lose conditions enforced on-chain
+7. ✅ Dev wallet switcher (2-player local testing)
+8. ✅ Moon Phases (3 phases, deterministic via keccak256)
+9. ✅ Board shake + cell flash on damage
+10. ✅ Post-game: only revealed cells shown (Never Reveal design)
+11. ✅ LandingScreen with ZK tutorial (collapsible explainer)
+12. ✅ Groth16 verifier contract deployed on testnet
 
-### **SHOULD HAVE (Differentiators):**
-8. ✅ Spirit Sense (Peek/Smell abilities)
-9. ✅ Moon Phases (3 types minimum)
-10. ✅ Garden Autopsy (post-game reveal)
-11. ✅ Emotes (5 basic reactions)
+### **SHOULD HAVE — Differentiators (Pending ⏳)**
+See `docs/PENDING_FEATURES.md` for full spec of each:
+- ⏳ Spirit Sense (Peek Adjacent / Smell Ahead — creature spends HP for info)
+- ⏳ Lavender "Calming Mist" special effect (debuff next plant)
+- ⏳ Moon Phase display at game start (prominent UI indicator)
+- ⏳ ZK proof generation progress UI (progress bar, proof size, gas cost)
+- ⏳ Post-game session stats (% revealed, turns taken, path highlight)
 
-### **SKIP (Post-hackathon):**
-- ❌ Strategy NFTs marketplace
-- ❌ Spectator mode with betting
-- ❌ Creature Journal (AI learning)
-- ❌ Seasonal events
+### **SKIP — Post-hackathon**
+- ❌ Strategy Vault (tradeable garden hashes as cryptographic assets)
+- ❌ Psychological bluff system
+- ❌ Spectator mode / betting
+- ❌ Additional creature types (Moon Moth, Shadow Wolf)
 - ❌ Achievement system
 
 ---
 
+## 🏆 Competitive Positioning
+
+**Expected competition (50-100 submissions):**
+- ~70%: ZK Poker / ZK Battleship clones, ZK voting — overdone, predictable
+- ~20%: Half-finished or ZK as decoration ("we added ZK to our README")
+- ~10%: Genuinely innovative and polished
+
+**Our advantages:**
+1. ✅ ZK is ESSENTIAL — genuinely impossible without it
+2. ✅ Never-reveal design — no other submission will do this
+3. ✅ Unique aesthetic — witchy pixel art vs generic card UIs
+4. ✅ Working full-stack prototype — contract + frontend + ZK prover
+5. ✅ Stellar-native — Game Hub, Protocol 25 BN254, deterministic randomness
+
+**Pitch angles that differentiate:**
+- *"Schrödinger's Garden"* — exists in superposition until observed via ZK
+- *"Privacy as Gameplay"* — not protecting your wallet, protecting your strategy
+- *"Trustless Bluffing"* — math is the dealer, cheating is mathematically impossible
+
+---
+
 ## 🎬 Video Demo Structure (2:30)
+
 ```
-0:00-0:20 HOOK
-"What if you could prove you won without revealing your strategy?"
-[Show garden commitment + selective reveal]
+0:00-0:15  HOOK
+"Most ZK games reveal everything after the match.
+ What if your strategy stayed secret... forever?"
 
-0:20-1:00 SETUP
-Gardener places plants → generates commitment
-Creature sees fog of war → must navigate blind
+0:15-1:00  SETUP
+Gardener places plants → fog of war hides everything from creature
+SHA-256 commitment submitted on-chain (show Stellar transaction)
 
-1:00-1:40 GAMEPLAY
-Creature uses Spirit Sense → finds hints
-Attacks cell → Gardener generates ZK proof
-Reveal shows plant → damage dealt
-Board state updates → only that cell visible
+1:00-1:40  GAMEPLAY
+Creature moves through darkness (fog of war visual)
+Creature steps on cell → Gardener generates ZK proof
+"Proof verifying on-chain..." → cell flash + board shake
+Damage dealt — HP bar drops — garden still hidden
 
-1:40-2:00 CLIMAX
-Garden Autopsy reveal → "You were 1 move away!"
-Full layout shown → Creature's path highlighted
+1:40-2:00  POST-GAME
+Game ends: only stepped cells visible
+"22 of 25 cells are STILL SECRET — forever"
+[Show on-chain commitment hash — strategy is permanent]
 
-2:00-2:30 TECH
-"Built on Stellar Protocol 25 + RiscZero
-Zero-Knowledge Proofs make this gameplay possible"
-[GitHub link + Live demo]
+2:00-2:30  TECH + CTA
+"Built on Stellar Protocol 25 — BN254 native verification"
+"RiscZero ZK proofs — garden never leaves your browser"
+[GitHub link + Testnet demo link]
 ```
 
 ---
@@ -588,15 +632,22 @@ Herbal Moonlight: Privacy IS the game
 Strategy hidden forever (unless you sell it)
 Pitch: "First game where ZK isn't a feature—it's the mechanic"
 
-📖 Glossary
-Garden: The 5x5 grid where Gardener places plants
-Commitment: Cryptographic hash of garden layout stored on-chain
-Reveal: ZK proof showing contents of specific cell
-Spirit Sense: Creature's HP-costing ability to gain information
-Moon Phase: Random modifier affecting game rules
-Autopsy: Post-game full garden reveal
-Bluff: Unverified claim (psychological warfare)
+## 📖 Glossary
 
-Version: 1.0 (Final for MVP)
-Last Updated: 2025-02-07
-Status: Ready for implementation
+| Term | Definition |
+|------|-----------|
+| Garden | 5×5 grid where Gardener places plants secretly |
+| Commitment | SHA-256 hash of garden layout stored on-chain; garden never leaves the browser |
+| Reveal | ZK proof that proves cell (x,y) content without revealing other cells |
+| Seal | Groth16 proof bytes; empty in dev mode (hash-only verification) |
+| Journal | 73-byte witness: commitment(32) + x(1) + y(1) + has_plant(1) + plant_type(1) + damage(1) + padding(36) |
+| Spirit Sense | Designed ability: Creature spends HP to gain spatial information (pending implementation) |
+| Moon Phase | Deterministic game modifier derived from keccak256(session_id) |
+| Never Reveal | Core design principle: garden stays cryptographically hidden forever post-game |
+| Strategy Vault | Future feature: commit winning garden hashes as tradeable cryptographic assets |
+
+---
+
+*Version: 2.1 — Implementation-Verified*
+*Last Updated: 2026-02-20*
+*Corrections from v1: plant damages, MAX_PLANTS=8, creature=Ghost, moon phase = keccak256, Never Reveal replaces Garden Autopsy*

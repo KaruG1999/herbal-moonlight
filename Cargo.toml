@@ -3,10 +3,8 @@ resolver = "2"
 version = "0.1.2"
 members = [
   "contracts/mock-game-hub",
-  "contracts/twenty-one",
-  "contracts/number-guess",
-  "contracts/dice-duel",
   "contracts/herbal-moonlight",
+  "contracts/groth16-verifier",
 ]
 
 [workspace.dependencies]

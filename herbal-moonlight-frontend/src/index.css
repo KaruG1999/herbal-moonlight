@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Lora:ital,wght@0,400;0,600;1,600&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Lora:ital,wght@0,400;0,600;1,600&family=Press+Start+2P&display=swap");
 @import "tailwindcss/theme";
 @import "tailwindcss/utilities";
 
@@ -13,25 +13,40 @@
   --font-serif: "Lora", "Times New Roman", serif;
   --font-body: "Inter", "Helvetica Neue", Arial, sans-serif;
   --font-mono: "IBM Plex Mono", "Fira Code", "JetBrains Mono", monospace;
-  --color-bg: #f6f7f8;
-  --color-surface: #ffffff;
-  --color-surface-warm: #d6d2c4;
-  --color-ink: #0f0f0f;
-  --color-ink-muted: #3f3f3f;
-  --color-accent: #fdda24;
-  --color-accent-strong: #002e5d;
-  --color-highlight: #b7ace8;
-  --color-teal: #00a7b5;
-  --color-border: rgba(15, 15, 15, 0.12);
-  --color-success: #00a7b5;
-  --color-warning: #fdda24;
-  --color-error: #c8463b;
-  --color-info: #002e5d;
+  --font-pixel: "Press Start 2P", monospace;
+
+  /* Witchy Moonlight palette */
+  --color-bg: #0a0e1a;
+  --color-surface: rgba(18, 24, 42, 0.85);
+  --color-surface-warm: #1a1f35;
+  --color-ink: #e8e4f0;
+  --color-ink-muted: #9a92b8;
+  --color-accent: #c9a84c;
+  --color-accent-strong: #f0d078;
+  --color-highlight: #7b68ae;
+  --color-teal: #4ecdc4;
+  --color-border: rgba(200, 180, 255, 0.12);
+  --color-success: #4ecdc4;
+  --color-warning: #c9a84c;
+  --color-error: #e06060;
+  --color-info: #7b9ee0;
+
+  /* Garden-specific colors */
+  --color-garden-empty: #1a2a1a;
+  --color-garden-border: #2d4a2d;
+  --color-garden-cell: rgba(30, 50, 30, 0.6);
+  --color-lavender: #b388ff;
+  --color-mint: #69f0ae;
+  --color-mandrake: #ff6e40;
+  --color-creature: #ffd54f;
+  --color-house: #c9a84c;
+
   --radius-lg: 28px;
   --radius-md: 18px;
   --radius-sm: 12px;
-  --shadow-soft: 0 24px 54px rgba(0, 0, 0, 0.08);
-  --shadow-tight: 0 10px 24px rgba(0, 0, 0, 0.08);
+  --shadow-soft: 0 24px 54px rgba(0, 0, 0, 0.4);
+  --shadow-tight: 0 10px 24px rgba(0, 0, 0, 0.3);
+  --shadow-glow: 0 0 20px rgba(201, 168, 76, 0.15);
 }
 
 html {
@@ -46,9 +61,7 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   min-height: 100vh;
-  background: radial-gradient(1200px circle at 15% -10%, rgba(253, 218, 36, 0.2), transparent 65%),
-    radial-gradient(1000px circle at 85% 5%, rgba(183, 172, 232, 0.2), transparent 70%),
-    var(--color-bg);
+  background: var(--color-bg);
   color: var(--color-ink);
   line-height: 1.6;
 }
@@ -69,7 +82,7 @@ h4 {
 }
 
 a {
-  color: var(--color-ink);
+  color: var(--color-accent);
   text-decoration: none;
 }
 
@@ -79,7 +92,7 @@ a:hover {
 
 ::selection {
   background: var(--color-accent);
-  color: var(--color-ink);
+  color: var(--color-bg);
 }
 
 button {
@@ -89,19 +102,19 @@ button {
   font-family: var(--font-body);
   transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
   cursor: pointer;
-  border: 1px solid var(--color-ink);
-  background: var(--color-accent);
+  border: 1px solid rgba(200, 180, 255, 0.2);
+  background: var(--color-highlight);
   color: var(--color-ink);
   font-size: 0.875rem;
 }
 
 button:hover {
   transform: translateY(-1px);
-  box-shadow: var(--shadow-tight);
+  box-shadow: 0 4px 16px rgba(123, 104, 174, 0.3);
 }
 
 button:disabled {
-  opacity: 0.45;
+  opacity: 0.35;
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
@@ -110,7 +123,7 @@ button:disabled {
 .btn-secondary {
   background: transparent;
   color: var(--color-ink);
-  border-color: var(--color-ink);
+  border-color: rgba(200, 180, 255, 0.3);
 }
 
 input,
@@ -122,7 +135,7 @@ select {
   font-size: 0.9rem;
   width: 100%;
   transition: border-color 0.2s, box-shadow 0.2s;
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(18, 24, 42, 0.9);
   color: var(--color-ink);
 }
 
@@ -130,8 +143,8 @@ input:focus,
 textarea:focus,
 select:focus {
   outline: none;
-  border-color: var(--color-ink);
-  box-shadow: 0 0 0 3px rgba(253, 218, 36, 0.35);
+  border-color: var(--color-highlight);
+  box-shadow: 0 0 0 3px rgba(123, 104, 174, 0.25);
 }
 
 .card {
@@ -140,26 +153,30 @@ select:focus {
   padding: 1.8rem;
   border: 1px solid var(--color-border);
   box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(12px);
 }
 
 .notice {
   padding: 1rem 1.25rem;
   border-radius: var(--radius-md);
   border: 1px solid var(--color-border);
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(18, 24, 42, 0.9);
   font-weight: 600;
 }
 
 .notice.error {
   color: var(--color-error);
+  border-color: rgba(224, 96, 96, 0.3);
 }
 
 .notice.success {
   color: var(--color-success);
+  border-color: rgba(78, 205, 196, 0.3);
 }
 
 .notice.info {
   color: var(--color-info);
+  border-color: rgba(123, 158, 224, 0.3);
 }
 
 .gradient-text {
@@ -167,4 +184,181 @@ select:focus {
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+}
+
+/* =====================================================
+   Garden cell reset — neutralises global button styles
+   for the 5x5 grid <button> cells.  Class selector beats
+   the element selector used by `button {}`, and avoids
+   the @layer issue that blocks Tailwind utilities.
+   ===================================================== */
+
+.garden-cell {
+  all: unset !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-sizing: border-box !important;
+}
+.garden-cell:hover {
+  transform: none !important;
+}
+.garden-cell:disabled {
+  opacity: 1 !important;
+  cursor: default !important;
+  transform: none !important;
+}
+
+/* =====================================================
+   Garden tile — code-rendered dirt cell with hover fx.
+   Uses !important to win over the global `button {}` rule
+   and the `all:unset` inline style reset.
+   ===================================================== */
+
+.garden-tile {
+  transition: filter 0.13s ease, transform 0.1s ease !important;
+}
+
+/* Only light up tiles the player can actually click */
+.garden-tile:hover:not([disabled]) {
+  filter: brightness(1.30) saturate(1.12) !important;
+}
+
+.garden-tile:active:not([disabled]) {
+  filter: brightness(0.85) !important;
+  transform: scale(0.94) !important;
+}
+
+/* =====================================================
+   Garden animations — Witchy/Cottagecore pixel art
+   ===================================================== */
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+
+@keyframes sway {
+  0%, 100% { transform: rotate(-3deg); }
+  50%       { transform: rotate(3deg);  }
+}
+
+@keyframes creature-float {
+  0%, 100% { transform: translateY(0px);  }
+  50%       { transform: translateY(-5px); }
+}
+
+@keyframes cell-hit {
+  0%, 100% { filter: brightness(1); }
+  25%      { filter: brightness(1.8) hue-rotate(-20deg); }
+  50%      { filter: brightness(0.6); }
+}
+
+/* Gentle sway for plant sprites inside cells */
+.plant-sway {
+  display: inline-block;
+  animation: sway 3s ease-in-out infinite;
+  will-change: transform;
+  transform-origin: bottom center;
+}
+
+/* Subtle vertical float for the creature sprite */
+.creature-float {
+  display: inline-block;
+  animation: creature-float 2s ease-in-out infinite;
+  will-change: transform;
+}
+
+/* Hit flash — applied briefly when a cell reveals damage */
+.cell-hit {
+  animation: cell-hit 0.5s ease-out;
+}
+
+/* Top-down perspective wrapper for the 5x5 board */
+.garden-perspective {
+  transform: perspective(1000px) rotateX(8deg);
+  transform-origin: center center;
+  will-change: transform;
+  overflow: visible;
+}
+
+/* House glow is now applied inline in HerbalMoonlightGame.tsx for y===4 cells */
+
+/* Pixel art rendering — sharp edges, no blur */
+.pixel-art {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  -ms-interpolation-mode: nearest-neighbor;
+}
+
+/* Pixel font for game titles */
+.font-pixel {
+  font-family: var(--font-pixel);
+}
+
+/* =====================================================
+   Magic pulse — shown during Soroban transactions
+   Gives a subtle "ZK is happening" aura effect
+   ===================================================== */
+
+@keyframes magic-pulse {
+  0%, 100% {
+    filter: drop-shadow(0 0 4px rgba(139, 92, 246, 0.5));
+    opacity: 0.75;
+  }
+  50% {
+    filter: drop-shadow(0 0 14px rgba(201, 168, 76, 0.9))
+            drop-shadow(0 0 6px rgba(139, 92, 246, 0.7));
+    opacity: 1;
+  }
+}
+
+.magic-loading {
+  display: inline-block;
+  animation: magic-pulse 1.4s ease-in-out infinite;
+}
+
+/* Slow-spin for the ✦ loading rune */
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.spin-slow {
+  display: inline-block;
+  animation: spin-slow 3s linear infinite;
+}
+
+/* =====================================================
+   Board shake — fired briefly when the Creature takes
+   damage. Compensates for the hidden plant sprites.
+   ===================================================== */
+
+@keyframes board-shake {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  15%      { transform: translate(-5px, -2px) rotate(-0.4deg); }
+  30%      { transform: translate(5px, 2px)  rotate(0.4deg); }
+  45%      { transform: translate(-4px, 1px) rotate(-0.3deg); }
+  60%      { transform: translate(4px, -1px) rotate(0.3deg); }
+  75%      { transform: translate(-2px, 1px); }
+}
+
+.board-shake {
+  animation: board-shake 0.45s ease-out;
+}
+
+/* =====================================================
+   Responsive player cards — 2-col on desktop, 1-col on mobile
+   ===================================================== */
+
+.player-cards-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+}
+
+@media (max-width: 480px) {
+  .player-cards-grid {
+    grid-template-columns: 1fr;
+  }
 }

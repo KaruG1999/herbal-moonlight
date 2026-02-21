@@ -49,8 +49,8 @@ Usage: bun run deploy [contract-name...]
 
 Examples:
   bun run deploy
-  bun run deploy number-guess
-  bun run deploy twenty-one number-guess
+  bun run deploy herbal-moonlight
+  bun run deploy groth16-verifier herbal-moonlight
 `);
 }
 
@@ -177,8 +177,6 @@ if (existsSync("deployment.json")) {
     } else {
       // Backwards compatible fallback
       if (existingDeployment?.mockGameHubId) existingContractIds["mock-game-hub"] = existingDeployment.mockGameHubId;
-      if (existingDeployment?.twentyOneId) existingContractIds["twenty-one"] = existingDeployment.twentyOneId;
-      if (existingDeployment?.numberGuessId) existingContractIds["number-guess"] = existingDeployment.numberGuessId;
     }
   } catch (error) {
     console.warn("⚠️  Warning: Failed to parse deployment.json, continuing...");
@@ -310,6 +308,10 @@ for (const contract of contracts) {
       const placeholderImageId = '0000000000000000000000000000000000000000000000000000000000000000'; // 32 zero bytes
       deployResult =
         await $`stellar contract deploy --wasm-hash ${wasmHash} --source-account ${adminSecret} --network ${NETWORK} -- --admin ${adminAddress} --game_hub ${mockGameHubId} --verifier_id ${placeholderVerifier} --image_id ${placeholderImageId}`.text();
+    } else if (contract.packageName === 'groth16-verifier') {
+      // groth16-verifier constructor only takes --admin (no game_hub needed)
+      deployResult =
+        await $`stellar contract deploy --wasm-hash ${wasmHash} --source-account ${adminSecret} --network ${NETWORK} -- --admin ${adminAddress}`.text();
     } else {
       // Standard game contract constructor: admin, game_hub
       deployResult =
@@ -335,9 +337,6 @@ for (const contract of allContracts) {
   if (id) console.log(`  ${contract.packageName}: ${id}`);
 }
 
-const twentyOneId = deployed["twenty-one"] || "";
-const numberGuessId = deployed["number-guess"] || "";
-
 const deploymentContracts = allContracts.reduce<Record<string, string>>((acc, contract) => {
   acc[contract.packageName] = deployed[contract.packageName] || "";
   return acc;
@@ -345,8 +344,6 @@ const deploymentContracts = allContracts.reduce<Record<string, string>>((acc, co
 
 const deploymentInfo = {
   mockGameHubId,
-  twentyOneId,
-  numberGuessId,
   contracts: deploymentContracts,
   network: NETWORK,
   rpcUrl: RPC_URL,

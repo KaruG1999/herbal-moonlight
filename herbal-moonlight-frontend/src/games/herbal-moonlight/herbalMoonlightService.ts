@@ -338,7 +338,14 @@ export class HerbalMoonlightService {
         DEFAULT_METHOD_OPTIONS.timeoutInSeconds,
         validUntilLedgerSeq
       );
-      return sentTx.result;
+      // sentTx.result may be Result<CellRevealResult> (SDK wrapper) or the
+      // already-unwrapped CellRevealResult depending on the SDK path taken.
+      // Unwrap defensively to guarantee we always return the inner value.
+      const raw = sentTx.result;
+      if (raw && typeof raw === 'object' && typeof (raw as any).isOk === 'function') {
+        return (raw as any).isOk() ? (raw as any).unwrap() as CellRevealResult : null;
+      }
+      return raw as CellRevealResult | null;
     } catch (err) {
       if (err instanceof Error && err.message.includes('Transaction failed!')) {
         throw new Error('Reveal failed - check proof data and game state');

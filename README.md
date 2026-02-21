@@ -154,6 +154,7 @@ bun run bindings herbal-moonlight
 | Component | Address |
 |-----------|---------|
 | **Herbal Moonlight Contract** | [`CCHDXLBZ73N7XHZKAEH3G6K3NQELAYASM3XU46A2TWHQX5AASEPN7WY2`](https://stellar.expert/explorer/testnet/contract/CCHDXLBZ73N7XHZKAEH3G6K3NQELAYASM3XU46A2TWHQX5AASEPN7WY2) |
+| **Groth16 Verifier** | [`CCV7EJ77WV4PN5RXQ2O4HPIOCNZI3WFFDGMWGMPWS2WCQ2PSVQQE777T`](https://stellar.expert/explorer/testnet/contract/CCV7EJ77WV4PN5RXQ2O4HPIOCNZI3WFFDGMWGMPWS2WCQ2PSVQQE777T) |
 | **Game Hub** | [`CB4VZAT2U3UC6XFK3N23SKRF2NDCMP3QHJYMCHHFMZO7MRQO6DQ2EMYG`](https://stellar.expert/explorer/testnet/contract/CB4VZAT2U3UC6XFK3N23SKRF2NDCMP3QHJYMCHHFMZO7MRQO6DQ2EMYG) |
 
 ---
@@ -162,15 +163,18 @@ bun run bindings herbal-moonlight
 
 ```
 Stellar-Game-Studio/                   (this repo)
-├── contracts/herbal-moonlight/        # Soroban smart contract (Rust)
+├── contracts/herbal-moonlight/        # Soroban game contract (Rust)
 │   └── src/
 │       ├── lib.rs                     # Contract logic (~680 lines)
 │       └── test.rs                    # 35 unit tests (~900 lines)
-├── herbal-moonlight-frontend/         # React frontend
+├── contracts/groth16-verifier/        # Standalone Groth16 ZK verifier (Rust)
+│   └── src/lib.rs                     # BN254 pairing verification + 8 tests
+├── herbal-moonlight-frontend/         # React frontend (standalone, production-ready)
 │   └── src/games/herbal-moonlight/
-│       ├── HerbalMoonlightGame.tsx    # Main game component
-│       ├── herbalMoonlightService.ts  # Contract interaction service
-│       ├── gardenUtils.ts             # Commitment, journal builder, move logic
+│       ├── HerbalMoonlightGame.tsx    # Main game component (fog of war, board shake, ZK reveal)
+│       ├── LandingScreen.tsx          # Pre-game landing with ZK tutorial
+│       ├── herbalMoonlightService.ts  # Contract interaction service (multi-sig, reveal)
+│       ├── gardenUtils.ts             # Commitment, journal builder, move validation
 │       └── bindings.ts                # Generated TypeScript bindings
 ├── bindings/herbal_moonlight/         # Generated TypeScript bindings from WASM
 ├── scripts/                           # Build, deploy, and bindings scripts
