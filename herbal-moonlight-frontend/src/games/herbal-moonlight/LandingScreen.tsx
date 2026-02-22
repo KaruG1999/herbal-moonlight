@@ -9,24 +9,25 @@
  */
 import { useState } from 'react';
 
-// ─── Shared nav pill style ──────────────────────────────────────────────────
+// ─── Shared nav pill style (Figma: 4px solid #312e81 border, transparent bg) ─
 const NAV_PILL: React.CSSProperties = {
   all: 'unset',
   boxSizing: 'border-box',
-  display: 'inline-block',
-  padding: '0.3rem 0.85rem',
-  borderRadius: 6,
-  background: 'rgba(8, 5, 22, 0.65)',
-  border: '1px solid rgba(140, 110, 220, 0.35)',
-  color: 'rgba(220, 210, 255, 0.88)',
-  fontSize: '0.72rem',
-  fontFamily: 'var(--font-body)',
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: '0.5rem 1.1rem',
+  borderRadius: 16,
+  background: 'transparent',
+  border: '2px solid #312e81',
+  color: '#ffffff',
+  fontSize: '0.85rem',
+  fontFamily: 'var(--font-serif)',
   fontWeight: 600,
   cursor: 'pointer',
-  backdropFilter: 'blur(6px)',
-  WebkitBackdropFilter: 'blur(6px)',
-  letterSpacing: '0.02em',
+  letterSpacing: '0.03em',
   whiteSpace: 'nowrap',
+  transition: 'border-color 0.15s, background 0.15s',
 };
 
 // ─── GameNavbar ─────────────────────────────────────────────────────────────
@@ -42,6 +43,8 @@ export interface GameNavbarProps {
   /** "Info" opens how-to-play panel */
   onInfo?: () => void;
   showInfo?: boolean;
+  /** Show centered game logo in navbar (S2/S3/S4 only, not S1) */
+  showLogo?: boolean;
 }
 
 export function GameNavbar({
@@ -53,6 +56,7 @@ export function GameNavbar({
   walletSwitching,
   onInfo,
   showInfo,
+  showLogo,
 }: GameNavbarProps) {
   return (
     <nav style={{
@@ -61,50 +65,56 @@ export function GameNavbar({
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
-      padding: '0.55rem 1rem',
-      background: 'rgba(4, 2, 14, 0.6)',
-      backdropFilter: 'blur(10px)',
-      WebkitBackdropFilter: 'blur(10px)',
-      borderBottom: '1px solid rgba(120, 90, 200, 0.12)',
+      padding: '0.85rem 1.5rem',
+      background: 'rgba(27, 27, 40, 0.5)',
+      boxShadow: 'inset 0px 4px 4px 0px rgba(0,0,0,0.25)',
       zIndex: 200,
-      gap: '0.5rem',
+      gap: '0.75rem',
+      minHeight: 72,
     }}>
       {/* Left: Info */}
       <button style={NAV_PILL as React.CSSProperties} onClick={onInfo}>
         {showInfo ? 'Close' : 'Info'}
       </button>
 
-      {/* Center: small logo */}
-      <img
-        src="/assets/logo.png"
-        alt="Herbal Moonlight"
-        style={{
-          height: 38, width: 'auto', objectFit: 'contain',
-          filter: 'drop-shadow(0 0 10px rgba(201,168,76,0.45))',
-        }}
-        draggable={false}
-      />
+      {/* Center: Logo — only in S2/S3/S4 (not S1 where logo sits above panel) */}
+      {showLogo && (
+        <img
+          src="/assets/logo.png"
+          alt="Herbal Moonlight"
+          draggable={false}
+          style={{
+            position: 'absolute',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            height: 44,
+            objectFit: 'contain',
+            pointerEvents: 'none',
+            filter: 'drop-shadow(0 2px 8px rgba(201,168,76,0.4))',
+          }}
+        />
+      )}
 
       {/* Right: wallet pill or Connect Wallet */}
       <div style={{ position: 'relative' }}>
         {walletAddress ? (
           <div style={{
-            display: 'flex', alignItems: 'center', gap: '0.35rem',
-            padding: '0.3rem 0.75rem',
-            borderRadius: 6,
-            background: 'rgba(8, 5, 22, 0.65)',
-            border: '1px solid rgba(201,168,76,0.2)',
-            color: 'rgba(220, 210, 255, 0.75)',
-            fontSize: '0.68rem',
+            display: 'flex', alignItems: 'center', gap: '0.4rem',
+            padding: '0.5rem 1rem',
+            borderRadius: 16,
+            border: '2px solid #312e81',
+            color: '#ffffff',
+            fontSize: '0.75rem',
             fontFamily: 'var(--font-mono)',
-            backdropFilter: 'blur(6px)',
           }}>
             {devPlayer && (
-              <span style={{ fontWeight: 700, color: 'var(--color-teal)', fontSize: '0.6rem' }}>
+              <span style={{ fontWeight: 700, color: 'var(--color-teal)', fontSize: '0.65rem' }}>
                 P{devPlayer}
               </span>
             )}
-            <span>{walletAddress.slice(0, 4)}&hellip;{walletAddress.slice(-4)}</span>
+            <span style={{ fontFamily: 'var(--font-serif)', fontSize: '0.85rem' }}>
+              {walletAddress.slice(0, 4)}&hellip;{walletAddress.slice(-4)}
+            </span>
             {onGearClick && (
               <button
                 onClick={onGearClick}
@@ -113,7 +123,7 @@ export function GameNavbar({
                   all: 'unset', boxSizing: 'border-box',
                   padding: '0.1rem 0.3rem', borderRadius: 4,
                   fontSize: '0.68rem', cursor: 'pointer', lineHeight: 1,
-                  color: gearOpen ? '#99f6e4' : 'rgba(200,180,255,0.45)',
+                  color: gearOpen ? '#99f6e4' : 'rgba(200,180,255,0.6)',
                   background: gearOpen ? 'rgba(13,148,136,0.2)' : 'transparent',
                   border: '1px solid rgba(78,205,196,0.18)',
                   transition: 'all 0.15s',
@@ -178,32 +188,32 @@ interface WoodPanelProps {
 export function WoodPanel({ children, maxWidth = 480 }: WoodPanelProps) {
   return (
     <div style={{ position: 'relative', width: '100%', maxWidth, margin: '0 auto' }}>
-      {/* Wood frame image — stretched to fill, content padding compensates */}
+      {/* Image sets the panel height naturally — no objectFit:fill, no distortion */}
       <img
         src="/assets/panel-inicio.png"
         alt=""
         aria-hidden="true"
         style={{
-          position: 'absolute',
-          inset: 0,
+          display: 'block',
           width: '100%',
-          height: '100%',
-          objectFit: 'fill',
-          zIndex: 0,
+          height: 'auto',
           pointerEvents: 'none',
           userSelect: 'none',
         }}
         draggable={false}
       />
-      {/* Content — padded to sit inside the wood rectangle */}
+      {/* Content overlaid on top of the image.
+          Padding uses % so it scales with the panel width (% always = % of element width in CSS).
+          Panel ratio 1280:853. Top ornament ≈ 30% of height = 20% of width.
+          Bottom ornament ≈ 15% of height = 10% of width. Sides ≈ 12% each. */}
       <div style={{
-        position: 'relative',
-        zIndex: 1,
-        padding: '2.75rem 2.5rem 3rem',
+        position: 'absolute',
+        inset: 0,
+        padding: '20% 12% 10%',
         display: 'flex',
         flexDirection: 'column',
-        gap: '0.65rem',
-        minHeight: 120,
+        gap: '0.55rem',
+        overflowY: 'auto',
       }}>
         {children}
       </div>
@@ -216,57 +226,95 @@ interface WoodButtonProps {
   children: React.ReactNode;
   onClick?: () => void;
   disabled?: boolean;
-  /** 'primary' is the highlighted variant, 'secondary' is dimmer */
-  variant?: 'primary' | 'secondary' | 'ghost';
+  /**
+   * 'primary'       — warm wood (default)
+   * 'secondary'     — dimmer wood
+   * 'ghost'         — transparent
+   * 'green'         — Figma: rgba(75,95,32,0.6), border #4b5f20
+   * 'blue'          — Figma: rgba(22,26,66,0.6), border #161a42
+   * 'purple'        — Figma: rgba(116,57,171,0.6), border #7439ab
+   * 'outlined-blue' — Figma S4: transparent, 3px solid #5c8ae5
+   * 'solid-indigo'  — Figma S4: #495099, no border
+   */
+  variant?: 'primary' | 'secondary' | 'ghost' | 'green' | 'blue' | 'purple' | 'outlined-blue' | 'solid-indigo';
 }
 
 export function WoodButton({ children, onClick, disabled, variant = 'primary' }: WoodButtonProps) {
-  const bg = disabled
-    ? 'rgba(20, 10, 4, 0.45)'
-    : variant === 'primary'
-      ? 'rgba(55, 32, 10, 0.82)'
-      : variant === 'secondary'
-        ? 'rgba(38, 22, 8, 0.72)'
-        : 'transparent';
+  const [hovered, setHovered] = useState(false);
+  const isFigmaColor = ['green', 'blue', 'purple', 'outlined-blue', 'solid-indigo'].includes(variant);
+
+  const bgBase =
+    variant === 'green' ? 'rgba(75, 95, 32, 0.6)'
+    : variant === 'blue' ? 'rgba(22, 26, 66, 0.6)'
+    : variant === 'purple' ? 'rgba(116, 57, 171, 0.6)'
+    : variant === 'outlined-blue' ? 'transparent'
+    : variant === 'solid-indigo' ? '#495099'
+    : variant === 'primary' ? 'rgba(55, 32, 10, 0.82)'
+    : variant === 'secondary' ? 'rgba(38, 22, 8, 0.72)'
+    : 'transparent'; // ghost
+
+  const bgHover =
+    variant === 'green' ? 'rgba(75, 95, 32, 0.8)'
+    : variant === 'blue' ? 'rgba(22, 26, 66, 0.8)'
+    : variant === 'purple' ? 'rgba(116, 57, 171, 0.8)'
+    : variant === 'outlined-blue' ? 'rgba(92, 138, 229, 0.15)'
+    : variant === 'solid-indigo' ? '#5a61aa'
+    : variant === 'primary' ? 'rgba(75, 45, 15, 0.9)'
+    : variant === 'secondary' ? 'rgba(55, 32, 10, 0.85)'
+    : 'rgba(60, 40, 10, 0.15)'; // ghost
+
+  const bg = disabled ? 'rgba(20, 10, 4, 0.45)' : hovered ? bgHover : bgBase;
 
   const border = disabled
     ? '1px solid rgba(100, 70, 30, 0.2)'
-    : variant === 'ghost'
-      ? '1px solid rgba(150, 110, 50, 0.25)'
-      : variant === 'primary'
-        ? '1px solid rgba(190, 140, 55, 0.55)'
-        : '1px solid rgba(150, 110, 50, 0.35)';
+    : variant === 'green' ? '3px solid #4b5f20'
+    : variant === 'blue' ? '3px solid #161a42'
+    : variant === 'purple' ? '3px solid #7439ab'
+    : variant === 'outlined-blue' ? '3px solid #5c8ae5'
+    : variant === 'solid-indigo' ? 'none'
+    : variant === 'ghost' ? '1px solid rgba(150, 110, 50, 0.25)'
+    : variant === 'primary' ? '1px solid rgba(190, 140, 55, 0.55)'
+    : '1px solid rgba(150, 110, 50, 0.35)'; // secondary
 
   const color = disabled
     ? 'rgba(130, 100, 60, 0.4)'
-    : variant === 'ghost'
-      ? 'rgba(190, 160, 100, 0.65)'
-      : 'rgba(238, 212, 158, 0.95)';
+    : isFigmaColor
+      ? '#ffffff'
+      : variant === 'ghost'
+        ? 'rgba(190, 160, 100, 0.65)'
+        : 'rgba(255, 235, 185, 1)';
 
   return (
     <button
       onClick={onClick}
       disabled={disabled}
+      onMouseEnter={() => !disabled && setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
       style={{
         all: 'unset',
         boxSizing: 'border-box',
         display: 'block',
         width: '100%',
-        padding: '0.65rem 1.5rem',
-        borderRadius: 8,
+        padding: isFigmaColor ? '0.5rem 1.2rem' : '0.55rem 1.2rem',
+        borderRadius: isFigmaColor ? 14 : 8,
         fontWeight: 600,
-        fontSize: '0.9rem',
+        fontSize: isFigmaColor ? '0.88rem' : '0.85rem',
         textAlign: 'center',
         cursor: disabled ? 'not-allowed' : 'pointer',
-        fontFamily: 'var(--font-body)',
-        letterSpacing: '0.04em',
+        fontFamily: isFigmaColor ? 'var(--font-serif)' : 'var(--font-body)',
+        letterSpacing: isFigmaColor ? '0.05em' : '0.04em',
         color,
         background: bg,
         border,
+        textShadow: (!disabled && !isFigmaColor) ? '0 1px 2px rgba(0,0,0,0.5)' : 'none',
         boxShadow: disabled || variant === 'ghost'
           ? 'none'
-          : 'inset 0 1px 0 rgba(210,170,80,0.18), 0 2px 8px rgba(0,0,0,0.3)',
-        transition: 'background 0.15s, border-color 0.15s',
+          : isFigmaColor
+            ? `0 2px 12px rgba(0,0,0,0.35)${hovered ? ', 0 4px 20px rgba(0,0,0,0.45)' : ''}`
+            : 'inset 0 1px 0 rgba(210,170,80,0.18), 0 2px 8px rgba(0,0,0,0.3)',
+        transform: hovered && !disabled ? 'translateY(-1px)' : 'none',
+        transition: 'background 0.15s, transform 0.12s, box-shadow 0.15s, opacity 0.15s',
+        opacity: disabled ? 0.5 : 1,
       }}
     >
       {children}
@@ -346,6 +394,7 @@ export function LandingScreen({
     <div style={{
       position: 'fixed', inset: 0, zIndex: 50,
       display: 'flex', flexDirection: 'column', alignItems: 'center',
+      justifyContent: 'center',
       overflowY: 'auto',
     }}>
       {/* Forest background */}
@@ -355,10 +404,10 @@ export function LandingScreen({
         backgroundSize: 'cover', backgroundPosition: 'center top',
         zIndex: -2,
       }} />
-      {/* Dark vignette */}
+      {/* Figma overlay: rgba(76,71,91,0.4) flat purple-grey tint */}
       <div style={{
         position: 'fixed', inset: 0,
-        background: 'linear-gradient(180deg, rgba(4,2,14,0.25) 0%, rgba(4,2,14,0.55) 100%)',
+        background: 'rgba(76, 71, 91, 0.4)',
         zIndex: -1,
       }} />
 
@@ -373,7 +422,7 @@ export function LandingScreen({
       {/* Info panel (collapsible) */}
       {showInfo && (
         <div style={{
-          position: 'fixed', top: 52, left: 0, right: 0,
+          position: 'fixed', top: 72, left: 0, right: 0,
           zIndex: 190,
           background: 'rgba(6, 3, 18, 0.94)',
           backdropFilter: 'blur(12px)',
@@ -403,39 +452,43 @@ export function LandingScreen({
         </div>
       )}
 
-      {/* Page content */}
+      {/* Page content — capped at 1000px, centered by parent flex */}
       <div style={{
-        width: '100%', maxWidth: 520,
-        padding: '5.5rem 1rem 3rem',
+        width: '90%',
+        maxWidth: 1000,
+        padding: '72px 0 1.5rem',
         display: 'flex', flexDirection: 'column', alignItems: 'center',
-        gap: '0.5rem',
+        gap: 0,
       }}>
-        {/* Large logo above the panel */}
+        {/* Logo — ~56% wide, bottom overlaps panel top (reference: herbs sit on top wood border) */}
         {showLogo && (
           <img
             src="/assets/logo.png"
             alt="Herbal Moonlight"
             style={{
-              width: '100%', maxWidth: 340, height: 'auto',
+              width: '56%', maxWidth: 560, height: 'auto',
               objectFit: 'contain',
-              filter: 'drop-shadow(0 4px 32px rgba(201,168,76,0.55)) drop-shadow(0 0 60px rgba(100,80,180,0.2))',
-              marginBottom: '-0.75rem', // slight overlap with panel top
+              filter: 'drop-shadow(0 4px 32px rgba(201,168,76,0.6)) drop-shadow(0 0 80px rgba(100,80,180,0.3))',
+              marginBottom: '-5rem', // logo bottom (herbs) sits over panel top frame
+              position: 'relative', zIndex: 2,
             }}
             draggable={false}
           />
         )}
 
-        {/* Wood panel — main card */}
-        <WoodPanel maxWidth={460}>
-          <ZkTutorial />
+        {/* Wood panel — fills container width, matching ~95vw reference */}
+        {/* ZkTutorial va al final para no ocultar los botones de acción */}
+        <WoodPanel maxWidth={9999}>
           {children}
+          <ZkTutorial />
         </WoodPanel>
 
         {/* Footer */}
         <p style={{
-          marginTop: '0.6rem',
-          fontSize: '0.58rem', color: 'rgba(170, 140, 90, 0.32)',
-          textAlign: 'center', fontFamily: 'var(--font-body)',
+          marginTop: '1rem',
+          fontSize: '0.65rem', color: 'rgba(200, 180, 140, 0.45)',
+          textAlign: 'center', fontFamily: 'var(--font-serif)',
+          letterSpacing: '0.02em',
         }}>
           Powered by ZK Magic &amp; Stellar Game Studio
         </p>

@@ -209,6 +209,7 @@ export function HerbalMoonlightGame({
   const [authEntryCopied, setAuthEntryCopied] = useState(false);
   const [sessionIdCopied, setSessionIdCopied] = useState(false);
   const [devGearOpen, setDevGearOpen] = useState(false);
+  const [infoOpen, setInfoOpen] = useState(false);
   const [welcomeDone, setWelcomeDone] = useState(false);
 
   // Garden setup phase (Gardener only)
@@ -985,8 +986,8 @@ export function HerbalMoonlightGame({
   const renderGardenEditor = () => (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <h3 style={{ fontFamily: 'var(--font-pixel)', fontSize: '0.7rem', color: 'var(--color-ink)', margin: 0 }}>Place Your Plants</h3>
-        <span style={{ fontFamily: 'var(--font-pixel)', fontSize: '0.55rem', color: 'var(--color-accent)', margin: 0 }}>
+        <h3 style={{ fontFamily: 'var(--font-serif)', fontSize: '1rem', color: 'var(--color-ink)', margin: 0 }}>Place Your Plants</h3>
+        <span style={{ fontFamily: 'var(--font-body)', fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-accent)', margin: 0 }}>
           {countPlants(garden)}/{MAX_PLANTS}
         </span>
       </div>
@@ -1062,7 +1063,7 @@ export function HerbalMoonlightGame({
         })}
       </div>
 
-      <p style={{ fontFamily: 'var(--font-pixel)', fontSize: '0.45rem', textAlign: 'center', color: 'var(--color-ink-muted)', lineHeight: 1.8, margin: 0 }}>
+      <p style={{ fontFamily: 'var(--font-body)', fontSize: '0.7rem', textAlign: 'center', color: 'var(--color-ink-muted)', lineHeight: 1.8, margin: 0 }}>
         Click to place. Click again to remove. Bottom row = house.
       </p>
     </div>
@@ -1114,19 +1115,19 @@ export function HerbalMoonlightGame({
 
         {/* ── Main create buttons ── */}
         {createMode === 'create' && !exportedAuthEntryXDR && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
-            <WoodButton onClick={handlePrepareTransaction} disabled={isBusy} variant="primary">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem', width: '100%', maxWidth: 360, margin: '0 auto' }}>
+            <WoodButton onClick={handlePrepareTransaction} disabled={isBusy} variant="green">
               {loading
                 ? <span className="magic-loading">{'\u2736'} Opening portal{'\u2026'}</span>
                 : 'Start Journey'}
             </WoodButton>
 
-            <WoodButton onClick={() => { setCreateMode('import'); setError(null); setSuccess(null); }} variant="secondary">
+            <WoodButton onClick={() => { setCreateMode('import'); setError(null); setSuccess(null); }} variant="blue">
               {'\uD83D\uDC7B'} Enter the Woods
             </WoodButton>
 
             {quickstartAvailable && (
-              <WoodButton onClick={handleQuickStart} disabled={isBusy} variant="ghost">
+              <WoodButton onClick={handleQuickStart} disabled={isBusy} variant="purple">
                 {quickstartLoading
                   ? <span className="magic-loading">{'\u2736'} Casting spell{'\u2026'}</span>
                   : '\u26A1 Quickstart (Dev)'}
@@ -1167,7 +1168,7 @@ export function HerbalMoonlightGame({
 
         {/* ── Auth entry XDR (after Gardener signs) ── */}
         {createMode === 'create' && exportedAuthEntryXDR && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem', width: '100%', maxWidth: 360, margin: '0 auto' }}>
             <p style={{ fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', color: '#4ecdc4', letterSpacing: '0.06em', margin: 0 }}>
               Auth Entry XDR — Gardener Signed
             </p>
@@ -1185,7 +1186,7 @@ export function HerbalMoonlightGame({
 
         {/* ── Import / Join as Creature ── */}
         {createMode === 'import' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem', width: '100%', maxWidth: 360, margin: '0 auto' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <p style={{ fontSize: '0.82rem', fontWeight: 700, color: 'rgba(228,195,135,0.9)', margin: 0 }}>
                 {'\uD83D\uDC7B'} Join as Creature
@@ -1298,11 +1299,11 @@ export function HerbalMoonlightGame({
         style={{ width: 28, height: 28, objectFit: 'contain', imageRendering: 'pixelated' as const }}
       />
       <div style={{ minWidth: 0, flex: 1 }}>
-        <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '0.45rem', color: 'var(--color-ink-muted)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+        <div style={{ fontFamily: 'var(--font-body)', fontSize: '0.55rem', fontWeight: 700, color: 'var(--color-ink-muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
           {role === 'gardener' ? 'Gardener' : 'Creature'}
         </div>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.65rem', color: 'var(--color-ink)', opacity: 0.7, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {address.slice(0, 8)}...{address.slice(-4)}
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.68rem', color: 'var(--color-ink)', opacity: 0.82, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {address.slice(0, 4)}&hellip;{address.slice(-4)}
         </div>
         {extraInfo && (
           <div style={{ fontSize: '0.65rem', color: 'var(--color-ink-muted)', marginTop: 2 }}>{extraInfo}</div>
@@ -1324,13 +1325,16 @@ export function HerbalMoonlightGame({
       ? () => { switchPlayer(getCurrentDevPlayer() === 1 ? 2 : 1); setDevGearOpen(false); }
       : undefined,
     walletSwitching,
+    onInfo: () => setInfoOpen(v => !v),
+    showInfo: infoOpen,
+    showLogo: true,
   };
 
   // Helper: background layers (forest + vignette) used by early-return screens
   const forestBgLayers = (
     <>
       <div style={{ position: 'fixed', inset: 0, backgroundImage: 'url(/assets/background.png)', backgroundSize: 'cover', backgroundPosition: 'center top', zIndex: -2 }} />
-      <div style={{ position: 'fixed', inset: 0, background: 'linear-gradient(180deg, rgba(4,2,14,0.25) 0%, rgba(4,2,14,0.55) 100%)', zIndex: -1, pointerEvents: 'none' as const }} />
+      <div style={{ position: 'fixed', inset: 0, background: 'rgba(76, 71, 91, 0.4)', zIndex: -1, pointerEvents: 'none' as const }} />
     </>
   );
 
@@ -1338,65 +1342,93 @@ export function HerbalMoonlightGame({
   const moonPhaseImg = (phase: number) =>
     phase === 0 ? '/assets/FullMoon.png' : phase === 1 ? '/assets/NewMoon.png' : '/assets/MenguantMoon.png';
 
+  // Helper: info panel shown when the navbar Info button is clicked (S2 / S3 / S4)
+  const renderInfoPanel = () => infoOpen ? (
+    <div style={{
+      position: 'fixed', top: 72, left: 0, right: 0,
+      zIndex: 190,
+      background: 'rgba(6,3,18,0.94)',
+      backdropFilter: 'blur(12px)',
+      borderBottom: '1px solid rgba(140,110,220,0.2)',
+      padding: '1.25rem 1.5rem 1.5rem',
+      animation: 'fadeUp 0.25s ease both',
+    }}>
+      <h3 style={{ fontFamily: 'var(--font-serif)', fontSize: '1rem', color: 'var(--color-accent)', marginBottom: '0.75rem' }}>
+        About Herbal Moonlight
+      </h3>
+      <p style={{ fontSize: '0.78rem', color: 'var(--color-ink-muted)', lineHeight: 1.65, maxWidth: 480 }}>
+        A 2-player ZK strategy game on Stellar Soroban. The{' '}
+        <strong style={{ color: 'var(--color-lavender)' }}>Gardener</strong> hides magical herbs in a 5&times;5 grid using a SHA-256 commitment. The{' '}
+        <strong style={{ color: 'var(--color-creature)' }}>Creature</strong> navigates blind, stepping on cells and taking damage. The garden layout is <em>never fully revealed</em> &mdash; even after the game ends.
+      </p>
+      <div style={{ marginTop: '0.75rem', display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
+        {([
+          ['\uD83C\uDF3F Lavender', '1 HP damage', 'Calming Mist on next hit'],
+          ['\uD83C\uDF3F Mint', '2 HP damage', 'Standard herb'],
+          ['\uD83C\uDF3F Mandrake', '3 HP damage', 'Rare, powerful'],
+        ] as [string, string, string][]).map(([name, dmg, note]) => (
+          <div key={name} style={{ fontSize: '0.72rem' }}>
+            <div style={{ fontWeight: 700, color: 'var(--color-ink)' }}>{name}</div>
+            <div style={{ color: 'var(--color-error)' }}>{dmg}</div>
+            <div style={{ color: 'var(--color-ink-muted)' }}>{note}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  ) : null;
+
   // ── Screen 2: Welcome (shown first time garden-setup phase starts) ────────
   if (uiPhase === 'garden-setup' && gameState && !welcomeDone) {
     return (
-      <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', alignItems: 'center', overflowY: 'auto' }}>
+      <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
         {forestBgLayers}
         <GameNavbar {...sharedNavProps} />
+        {renderInfoPanel()}
 
-        {/* Centered welcome content */}
-        <div style={{ width: '100%', maxWidth: 600, padding: '5rem 1rem 2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, justifyContent: 'center' }}>
-          {/* Witch + Panel row */}
-          <div style={{ display: 'flex', alignItems: 'flex-end', width: '100%' }}>
-            {/* Witch overlapping left side of panel */}
-            <img
-              src="/brujita.png"
-              alt="Gardener"
-              draggable={false}
-              style={{
-                height: 190,
-                imageRendering: 'pixelated',
-                filter: 'drop-shadow(0 0 24px rgba(201,168,76,0.45))',
-                position: 'relative',
-                zIndex: 2,
-                marginRight: -65,
-                flexShrink: 0,
-              }}
-            />
-            {/* Wood panel */}
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <WoodPanel maxWidth={9999}>
-                <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.25rem', color: 'rgba(238,212,158,0.95)', margin: 0, textAlign: 'center', textShadow: '0 2px 8px rgba(0,0,0,0.5)' }}>
-                  Welcome to Herbal Moonlight!
-                </h2>
-                <p style={{ fontFamily: 'var(--font-serif)', fontSize: '0.82rem', color: 'rgba(200,175,130,0.82)', textAlign: 'center', fontStyle: 'italic', lineHeight: 1.65, margin: '0.2rem 0 0.4rem' }}>
-                  &ldquo;Plant your herbs in secret and defend your garden from night creatures!&rdquo;
-                </p>
-                {/* Baby plant trio */}
-                <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', padding: '0.25rem 0' }}>
-                  {[
-                    ['/assets/lavender2.png', 'Lavender'],
-                    ['/assets/mint2.png', 'Mint'],
-                    ['/assets/mandrake2.png', 'Mandrake'],
-                  ].map(([src, label]) => (
-                    <div key={label} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-                      <img src={src} alt={label} draggable={false} style={{ height: 46, imageRendering: 'pixelated', filter: 'drop-shadow(0 0 6px rgba(201,168,76,0.3))' }} />
-                      <span style={{ fontSize: '0.52rem', color: 'rgba(200,175,130,0.6)', fontFamily: 'var(--font-body)' }}>{label}</span>
-                    </div>
-                  ))}
+        {/* Witch fixed at bottom-left — doesn't affect panel layout */}
+        <img
+          src="/brujita.png"
+          alt="Gardener"
+          draggable={false}
+          style={{
+            position: 'fixed',
+            bottom: 0,
+            left: 0,
+            height: '48vh',
+            imageRendering: 'pixelated',
+            filter: 'drop-shadow(0 0 24px rgba(201,168,76,0.5))',
+            zIndex: 3,
+            pointerEvents: 'none',
+          }}
+        />
+
+        {/* Centered panel — flex centers it vertically ignoring the fixed witch */}
+        <div style={{ width: '80%', maxWidth: 700, zIndex: 4, marginTop: '4rem' }}>
+          <WoodPanel maxWidth={9999}>
+            <h2 style={{ fontFamily: 'var(--font-game)', fontSize: '1.3rem', color: 'rgba(238,212,158,0.95)', margin: 0, textAlign: 'center', textShadow: '0 2px 8px rgba(0,0,0,0.5)' }}>
+              Welcome to Herbal Moonlight!
+            </h2>
+            <p style={{ fontFamily: 'var(--font-serif)', fontSize: '0.82rem', color: 'rgba(200,175,130,0.82)', textAlign: 'center', fontStyle: 'italic', lineHeight: 1.65, margin: '0.2rem 0 0.4rem' }}>
+              &ldquo;Plant your herbs in secret and defend your garden from night creatures!&rdquo;
+            </p>
+            {/* Baby plant trio */}
+            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', padding: '0.25rem 0' }}>
+              {[
+                ['/assets/lavender2.png', 'Lavender'],
+                ['/assets/mint2.png', 'Mint'],
+                ['/assets/mandrake2.png', 'Mandrake'],
+              ].map(([src, label]) => (
+                <div key={label} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                  <img src={src} alt={label} draggable={false} style={{ height: 46, imageRendering: 'pixelated', filter: 'drop-shadow(0 0 6px rgba(201,168,76,0.3))' }} />
+                  <span style={{ fontSize: '0.52rem', color: 'rgba(200,175,130,0.6)', fontFamily: 'var(--font-body)' }}>{label}</span>
                 </div>
-                <WoodButton onClick={() => setWelcomeDone(true)} variant="primary">
-                  Begin Adventure
-                </WoodButton>
-              </WoodPanel>
+              ))}
             </div>
-          </div>
+            <WoodButton onClick={() => setWelcomeDone(true)} variant="primary">
+              Begin Adventure
+            </WoodButton>
+          </WoodPanel>
         </div>
-
-        <p style={{ fontSize: '0.58rem', color: 'rgba(170,140,90,0.32)', textAlign: 'center', fontFamily: 'var(--font-body)', padding: '0 1rem 1.5rem' }}>
-          Powered by ZK Magic &amp; Stellar Game Studio
-        </p>
       </div>
     );
   }
@@ -1411,37 +1443,33 @@ export function HerbalMoonlightGame({
     const damageTaken = Math.max(0, startingHp - gameState.creature_hp);
 
     return (
-      <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', flexDirection: 'column', alignItems: 'center', overflowY: 'auto' }}>
+      <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', alignItems: 'center', overflowY: 'auto' }}>
         {forestBgLayers}
         <GameNavbar {...sharedNavProps} />
+        {renderInfoPanel()}
 
-        <div style={{ width: '100%', maxWidth: 500, padding: '5rem 1rem 2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, justifyContent: 'center', gap: '0.75rem' }}>
-
-          {playerWon && (
-            <div style={{ padding: '0.3rem 1.2rem', borderRadius: 999, background: gardenerWon ? 'rgba(201,168,76,0.15)' : 'rgba(167,139,250,0.15)', border: `1px solid ${gardenerWon ? 'rgba(201,168,76,0.4)' : 'rgba(167,139,250,0.4)'}`, fontSize: '0.75rem', fontWeight: 700, color: gardenerWon ? '#f0c850' : '#c4b5fd', letterSpacing: '0.06em', animation: 'fadeUp 0.6s ease both' }}>
-              {'\u2728'} You won this round!
-            </div>
-          )}
+        <div style={{ width: '85%', maxWidth: 680, padding: '5.5rem 0 2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, justifyContent: 'center', gap: '0.75rem' }}>
 
           <WoodPanel maxWidth={9999}>
-            {/* Skull + Troll row */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', textAlign: 'center' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.35rem', opacity: gardenerWon ? 0.38 : 1, transition: 'opacity 0.4s' }}>
-                <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#f87171', fontFamily: 'var(--font-body)' }}>You lose!</div>
-                <img src="/assets/Lose-died.png" alt="Lose" draggable={false} style={{ height: 82, imageRendering: 'pixelated', filter: 'drop-shadow(0 0 10px rgba(240,100,100,0.35))' }} />
+            {/* Single win OR lose display */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem', textAlign: 'center' }}>
+              <div style={{ fontSize: '1.1rem', fontWeight: 700, fontFamily: 'var(--font-game)', color: playerWon ? '#86efac' : '#f87171', textShadow: `0 0 16px ${playerWon ? 'rgba(134,239,172,0.6)' : 'rgba(248,113,113,0.6)'}` }}>
+                {playerWon ? 'You Win!' : 'You lose!'}
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.35rem', opacity: !gardenerWon ? 0.38 : 1, transition: 'opacity 0.4s' }}>
-                <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#86efac', fontFamily: 'var(--font-body)' }}>You Win!</div>
-                <img src="/assets/Win-Troll.png" alt="Win" draggable={false} style={{ height: 82, imageRendering: 'pixelated', filter: 'drop-shadow(0 0 10px rgba(134,239,172,0.35))' }} />
-              </div>
+              <img
+                src={playerWon ? '/assets/Win-Troll.png' : '/assets/Lose-died.png'}
+                alt={playerWon ? 'Win' : 'Lose'}
+                draggable={false}
+                style={{ height: 'clamp(70px, 15vw, 110px)', imageRendering: 'pixelated', filter: `drop-shadow(0 0 12px rgba(${playerWon ? '134,239,172' : '240,100,100'},0.4))` }}
+              />
             </div>
 
             {/* Battle Report */}
             <div style={{ padding: '0.6rem 0.75rem', background: 'rgba(8,4,1,0.55)', borderRadius: 8, border: '1px solid rgba(130,90,40,0.25)' }}>
-              <div style={{ fontSize: '0.58rem', fontWeight: 700, color: 'rgba(195,155,90,0.65)', marginBottom: '0.45rem', textTransform: 'uppercase' as const, letterSpacing: '0.06em' }}>
+              <div style={{ fontSize: '0.62rem', fontWeight: 700, color: 'rgba(195,155,90,0.75)', marginBottom: '0.45rem', textTransform: 'uppercase' as const, letterSpacing: '0.08em' }}>
                 Battle Report
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', fontWeight: 700, color: '#4ecdc4', marginBottom: '0.25rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', fontWeight: 700, color: '#4ecdc4', marginBottom: '0.3rem' }}>
                 <span>{'\uD83D\uDD12'} Forever Hidden</span>
                 <span>{foreverHidden} / 25</span>
               </div>
@@ -1451,32 +1479,32 @@ export function HerbalMoonlightGame({
                 ['Turns played', String(gameState.turn_number)],
                 ['Moon phase', `${moonPhaseEmoji(gameState.moon_phase)} ${moonPhaseLabel(gameState.moon_phase)}`],
               ].map(([label, value]) => (
-                <div key={label} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.68rem', color: 'rgba(200,175,130,0.7)', marginBottom: '0.2rem' }}>
+                <div key={label} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'rgba(200,175,130,0.78)', marginBottom: '0.22rem' }}>
                   <span>{label}</span>
-                  <span style={{ fontWeight: 500 }}>{value}</span>
+                  <span style={{ fontWeight: 600 }}>{value}</span>
                 </div>
               ))}
             </div>
 
-            {/* Buttons */}
+            {isGardener && gardenerWon && gardenCommitment && (
+              <p style={{ fontSize: '0.62rem', color: 'rgba(200,180,255,0.52)', textAlign: 'center', fontFamily: 'monospace', margin: 0 }}>
+                {'\uD83D\uDD10'} Garden hash: {gardenCommitment.toString('hex').slice(0, 8)}&hellip;
+              </p>
+            )}
+
+            {/* Buttons — outlined-blue + solid-indigo per Figma S4 */}
             <div style={{ display: 'flex', gap: '0.55rem' }}>
               <div style={{ flex: 1 }}>
-                <WoodButton onClick={handleStartNewGame} variant="secondary">Try Again</WoodButton>
+                <WoodButton onClick={handleStartNewGame} variant="outlined-blue">Try Again</WoodButton>
               </div>
               <div style={{ flex: 1 }}>
-                <WoodButton onClick={() => { setUiPhase('create'); setSessionId(0); setGameState(null); }} variant="primary">Exit</WoodButton>
+                <WoodButton onClick={() => { setUiPhase('create'); setSessionId(0); setGameState(null); }} variant="solid-indigo">Exit</WoodButton>
               </div>
             </div>
           </WoodPanel>
-
-          {isGardener && gardenerWon && gardenCommitment && (
-            <p style={{ fontSize: '0.6rem', color: 'rgba(200,180,255,0.3)', textAlign: 'center', fontFamily: 'monospace' }}>
-              {'\uD83D\uDD10'} Garden hash: {gardenCommitment.toString('hex').slice(0, 8)}&hellip;
-            </p>
-          )}
         </div>
 
-        <p style={{ fontSize: '0.58rem', color: 'rgba(170,140,90,0.32)', textAlign: 'center', fontFamily: 'var(--font-body)', padding: '0 1rem 1.5rem' }}>
+        <p style={{ fontSize: '0.65rem', color: 'rgba(200,180,140,0.45)', textAlign: 'center', fontFamily: 'var(--font-serif)', letterSpacing: '0.02em', padding: '0 1rem 1.5rem' }}>
           Powered by ZK Magic &amp; Stellar Game Studio
         </p>
       </div>
@@ -1484,8 +1512,17 @@ export function HerbalMoonlightGame({
   }
 
   // ====================================================================
-  // Full-screen immersive layout — matches the prototipo aesthetic.
-  // Covers the Layout header via position:fixed (same pattern as LandingScreen).
+  // MAIN RETURN — handles two distinct visual states (S3a + S3b):
+  //
+  //   S3a — uiPhase === 'garden-setup' (post-welcomeDone)
+  //          Gardener: renderGardenEditor() + commit button
+  //          Creature: waiting screen
+  //
+  //   S3b — uiPhase === 'play'
+  //          3-column dark panel (Gardener | Board | Creature)
+  //
+  // Both share: forest background, rgba(76,71,91,0.4) overlay, GameNavbar.
+  // contentColStyle.maxWidth: 520 for S3a, 700 for S3b.
   // ====================================================================
 
   const fullscreenStyle: React.CSSProperties = {
@@ -1498,30 +1535,13 @@ export function HerbalMoonlightGame({
     overflowY: 'auto',
   };
 
-  const bgLayerStyle: React.CSSProperties = {
-    position: 'fixed',
-    inset: 0,
-    backgroundImage: 'url(/assets/background.png)',
-    backgroundSize: 'cover',
-    backgroundPosition: 'center',
-    zIndex: -2,
-    imageRendering: 'pixelated',
-  };
-
-  const vignetteStyle: React.CSSProperties = {
-    position: 'fixed',
-    inset: 0,
-    background: 'radial-gradient(ellipse at center, rgba(10,14,26,0.05) 0%, rgba(10,14,26,0.72) 100%)',
-    zIndex: -1,
-    pointerEvents: 'none',
-  };
-
+  // S3a and S3b share same unified dark panel — wider for 3-col layout
   const contentColStyle: React.CSSProperties = {
     position: 'relative',
     zIndex: 1,
-    width: '100%',
-    maxWidth: uiPhase === 'play' ? 700 : 520,
-    padding: uiPhase === 'play' ? '4.5rem 0.75rem 3rem' : '4.5rem 1rem 3rem',
+    width: '92%',
+    maxWidth: 1100,
+    padding: '5.25rem 0 3rem',
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
@@ -1546,12 +1566,12 @@ export function HerbalMoonlightGame({
 
   return (
     <div style={fullscreenStyle}>
-      {/* Background layers */}
-      <div style={bgLayerStyle} />
-      <div style={vignetteStyle} />
+      {/* Background layers — same helper as S2 / S4 / LandingScreen */}
+      {forestBgLayers}
 
       {/* ── Navbar (matches all 4 reference screens) ────────────────── */}
       <GameNavbar {...sharedNavProps} />
+      {renderInfoPanel()}
 
       {/* Scrollable content column */}
       <div style={contentColStyle}>
@@ -1569,112 +1589,59 @@ export function HerbalMoonlightGame({
         )}
 
         {/* ============================================================ */}
-        {/* GARDEN SETUP PHASE */}
+        {/* UNIFIED GAME PANEL — garden-setup + play share same dark panel */}
         {/* ============================================================ */}
-        {uiPhase === 'garden-setup' && gameState && (
-          <>
-            {isGardener && gameState.phase === GamePhase.WaitingForCommitment ? (
-              <>
-                {renderGardenEditor()}
-
-                <button
-                  onClick={handleCommitGarden}
-                  disabled={isBusy || countPlants(garden) === 0}
-                  style={actionBtnStyle('linear-gradient(135deg, #7c3aed, #4f46e5)', isBusy || countPlants(garden) === 0)}
-                >
-                  {loading
-                    ? <span className="magic-loading">{'\u2736'} Sellando con SHA-256{'\u2026'}</span>
-                    : '\uD83C\uDF3F Sellar Jard\u00EDn'}
-                </button>
-
-                <p style={dimTextStyle}>
-                  Haz clic para plantar. Clic de nuevo para quitar. La fila inferior es tu hogar.
-                </p>
-              </>
-            ) : (
-              /* Waiting for the other player */
-              <div style={{ textAlign: 'center', padding: '1.5rem 0' }}>
-                <img
-                  src={isCreature ? CREATURE_IMG : WITCH_IMG}
-                  alt=""
-                  style={{ width: 72, height: 72, objectFit: 'contain', imageRendering: 'pixelated' as const, margin: '0 auto 0.75rem', display: 'block', filter: 'drop-shadow(0 0 16px rgba(201,168,76,0.4))' }}
-                />
-                <h3 style={{ fontFamily: 'var(--font-pixel)', fontSize: '0.58rem', color: 'var(--color-ink)', margin: '0 0 0.5rem', lineHeight: 1.8 }}>
-                  {isCreature ? '\u23f3 Aguardando al Jardinero\u2026' : '\uD83C\uDF3F \u00A1Jard\u00EDn Sellado!'}
-                </h3>
-                <p style={{ fontSize: '0.75rem', color: 'var(--color-ink-muted)', margin: '0 0 1rem', maxWidth: 320 }}>
-                  {isCreature
-                    ? 'El Jardinero est\u00E1 sembrando hierbas m\u00E1gicas. La partida comenzar\u00E1 en breve.'
-                    : 'Sincronizando con el contrato\u2026'}
-                </p>
-                <div style={{ display: 'inline-block', padding: '0.3rem 0.9rem', borderRadius: 999, background: 'rgba(201,168,76,0.15)', fontFamily: 'var(--font-pixel)', fontSize: '0.38rem', color: 'var(--color-accent)', animation: 'fadeUp 1.5s ease-in-out infinite alternate' }}>
-                  <span className="magic-loading">\u2736 Polling\u2026</span>
-                </div>
-              </div>
-            )}
-
-            {/* Player info cards */}
-            <div className="player-cards-grid" style={{ width: '100%', maxWidth: 480 }}>
-              {renderPlayerCard('gardener', isGardener, gameState.gardener,
-                `Points: ${(Number(gameState.gardener_points) / 10000000).toFixed(2)}`)}
-              {renderPlayerCard('creature', isCreature, gameState.creature,
-                `HP: ${gameState.creature_hp} | Pts: ${(Number(gameState.creature_points) / 10000000).toFixed(2)}`)}
-            </div>
-          </>
-        )}
-
-        {/* ============================================================ */}
-        {/* PLAY PHASE — 3-column dark panel (matches Game.png reference) */}
-        {/* ============================================================ */}
-        {uiPhase === 'play' && gameState && (() => {
+        {gameState && (() => {
           const plantsByType = isGardener ? countPlantsByType(garden) : null;
           const phase = gameState.moon_phase;
-          const perTypeMax = 3; // show X/3 for each plant type (illustrative)
+          const perTypeMax = 3;
           return (
             <div style={{
               width: '100%',
-              background: 'rgba(20, 12, 50, 0.88)',
+              background: 'rgba(22, 26, 66, 0.5)',
               backdropFilter: 'blur(10px)',
               WebkitBackdropFilter: 'blur(10px)',
-              borderRadius: 18,
+              borderRadius: 50,
               border: '1px solid rgba(140, 100, 220, 0.3)',
               boxShadow: '0 8px 40px rgba(0,0,0,0.6), 0 0 60px rgba(100,60,200,0.12)',
               overflow: 'hidden',
               animation: 'fadeUp 0.5s ease both',
             }}>
 
-              {/* ── Header: Moon + Session + Turn status ── */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.6rem', padding: '0.55rem 0.75rem', borderBottom: '1px solid rgba(140,100,220,0.15)', flexWrap: 'wrap' }}>
+              {/* ── Header: Moon + Session + Phase badge ── */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.55rem', padding: '0.55rem 0.75rem', borderBottom: '1px solid rgba(140,100,220,0.15)', flexWrap: 'wrap' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                  <img src={moonPhaseImg(phase)} alt="" draggable={false} style={{ height: 24, imageRendering: 'pixelated' }} />
+                  <img src={moonPhaseImg(phase)} alt="" draggable={false} style={{ height: 'clamp(20px, 4vw, 30px)', imageRendering: 'pixelated' }} />
                   <div>
-                    <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '0.38rem', color: '#c4b5fd', letterSpacing: '0.04em', lineHeight: 1.4 }}>{moonPhaseLabel(phase).toUpperCase()}</div>
-                    <button onClick={copySessionId} style={{ all: 'unset', fontSize: '0.55rem', color: 'rgba(200,180,255,0.38)', fontFamily: 'var(--font-mono)', cursor: 'pointer', display: 'block', lineHeight: 1.3 }}>
+                    <div style={{ fontFamily: 'var(--font-body)', fontSize: '0.55rem', fontWeight: 700, color: '#c4b5fd', letterSpacing: '0.08em', lineHeight: 1.4, textTransform: 'uppercase' as const }}>{moonPhaseLabel(phase)}</div>
+                    <button onClick={copySessionId} style={{ all: 'unset', fontSize: '0.55rem', color: 'rgba(200,180,255,0.45)', fontFamily: 'var(--font-mono)', cursor: 'pointer', display: 'block', lineHeight: 1.3 }}>
                       {sessionIdCopied ? '\u2713 Copied!' : `#${sessionId}`}
                     </button>
                   </div>
                 </div>
                 <div style={{ width: 1, height: 20, background: 'rgba(140,100,220,0.2)' }} />
-                <span style={{ fontFamily: 'var(--font-pixel)', fontSize: '0.36rem', color: gameState.phase === GamePhase.Playing ? '#a5b4fc' : '#f0c850', padding: '0.15rem 0.5rem', borderRadius: 999, background: gameState.phase === GamePhase.Playing ? 'rgba(99,102,241,0.2)' : 'rgba(201,168,76,0.2)' }}>
-                  {gameState.phase === GamePhase.Playing ? '\uD83D\uDC7B Creature Turn' : '\uD83C\uDF3F ZK Reveal'}
+                <span style={{ fontFamily: 'var(--font-body)', fontSize: '0.62rem', fontWeight: 700, padding: '0.2rem 0.55rem', borderRadius: 999, color: uiPhase === 'garden-setup' ? '#c4b5fd' : (gameState.phase === GamePhase.Playing ? '#a5b4fc' : '#f0c850'), background: uiPhase === 'garden-setup' ? 'rgba(99,102,241,0.15)' : (gameState.phase === GamePhase.Playing ? 'rgba(99,102,241,0.2)' : 'rgba(201,168,76,0.2)') }}>
+                  {uiPhase === 'garden-setup' ? '\uD83C\uDF3F Garden Setup' : (gameState.phase === GamePhase.Playing ? '\uD83D\uDC7B Creature Turn' : '\uD83C\uDF3F ZK Reveal')}
                 </span>
-                {gameState.damage_reduction > 0 && (
-                  <span style={{ fontSize: '0.58rem', padding: '0.1rem 0.45rem', borderRadius: 999, background: 'rgba(78,205,196,0.15)', border: '1px solid rgba(78,205,196,0.35)', color: '#4ecdc4', fontWeight: 700 }}>
+                {uiPhase === 'play' && gameState.damage_reduction > 0 && (
+                  <span style={{ fontSize: '0.62rem', fontWeight: 700, padding: '0.2rem 0.5rem', borderRadius: 999, background: 'rgba(78,205,196,0.15)', border: '1px solid rgba(78,205,196,0.35)', color: '#4ecdc4' }}>
                     {'\uD83C\uDF38'} Calming Mist
                   </span>
                 )}
-                <span style={{ fontFamily: 'var(--font-pixel)', fontSize: '0.36rem', color: 'rgba(200,180,255,0.4)' }}>
-                  Turn {gameState.turn_number}
-                </span>
+                {uiPhase === 'play' && (
+                  <span style={{ fontFamily: 'var(--font-body)', fontSize: '0.58rem', fontWeight: 600, color: 'rgba(200,180,255,0.5)' }}>
+                    Turn {gameState.turn_number}
+                  </span>
+                )}
               </div>
 
               {/* ── 3-column body ── */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.75fr 1fr' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.75fr 1fr', overflow: 'hidden' }}>
 
                 {/* LEFT: Gardener */}
-                <div style={{ padding: '0.75rem 0.4rem 0.75rem 0.75rem', borderRight: '1px solid rgba(140,100,220,0.12)', display: 'flex', flexDirection: 'column', gap: '0.45rem', alignItems: 'center' }}>
-                  <img src={WITCH_IMG} alt="Gardener" draggable={false} style={{ height: 30, imageRendering: 'pixelated', filter: 'drop-shadow(0 0 8px rgba(179,136,255,0.4))' }} />
-                  <span style={{ fontFamily: 'var(--font-pixel)', fontSize: '0.36rem', color: '#c4b5fd', letterSpacing: '0.04em' }}>GARDENER</span>
+                <div style={{ padding: '0.75rem 0.4rem 0.75rem 0.75rem', borderRight: '1px solid rgba(140,100,220,0.12)', display: 'flex', flexDirection: 'column', gap: '0.45rem', alignItems: 'center', minWidth: 0, overflow: 'hidden' }}>
+                  <img src={WITCH_IMG} alt="Gardener" draggable={false} style={{ height: 'clamp(30px, 5vw, 44px)', imageRendering: 'pixelated', filter: 'drop-shadow(0 0 8px rgba(179,136,255,0.4))' }} />
+                  <span style={{ fontFamily: 'var(--font-body)', fontSize: '0.55rem', fontWeight: 700, color: '#c4b5fd', letterSpacing: '0.08em', textTransform: 'uppercase' as const }}>Gardener</span>
                   <div style={{ width: '100%', height: 1, background: 'rgba(140,100,220,0.12)' }} />
                   {([1, 2, 3] as const).map(pType => (
                     <div key={pType} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, width: '100%' }}>
@@ -1682,84 +1649,125 @@ export function HerbalMoonlightGame({
                         src={pType === 1 ? '/assets/lavender2.png' : pType === 2 ? '/assets/mint2.png' : '/assets/mandrake2.png'}
                         alt={PLANT_NAMES[pType]}
                         draggable={false}
-                        style={{ height: 42, imageRendering: 'pixelated', filter: 'drop-shadow(0 0 5px rgba(140,80,200,0.3))' }}
+                        style={{ height: 'clamp(34px, 7vw, 52px)', imageRendering: 'pixelated', filter: 'drop-shadow(0 0 5px rgba(140,80,200,0.3))' }}
                       />
-                      <span style={{ fontSize: '0.58rem', color: 'rgba(200,180,255,0.8)', fontWeight: 600 }}>
+                      <span style={{ fontSize: '0.72rem', color: 'rgba(200,180,255,0.9)', fontWeight: 700 }}>
                         {isGardener && plantsByType ? `${plantsByType[pType]}/${perTypeMax}` : '?/?'}
                       </span>
-                      <span style={{ fontSize: '0.48rem', color: 'rgba(180,155,220,0.42)' }}>{PLANT_NAMES[pType]}</span>
+                      <span style={{ fontSize: '0.6rem', color: 'rgba(180,155,220,0.62)', fontWeight: 500 }}>{PLANT_NAMES[pType]}</span>
                     </div>
                   ))}
                 </div>
 
-                {/* CENTER: Board */}
-                <div style={{ padding: '0.75rem 0.5rem', display: 'flex', flexDirection: 'column', gap: '0.45rem', alignItems: 'center' }}>
-                  {renderGameBoard(true, isGardener)}
-
-                  {/* ZK Proof progress bar */}
-                  {revealingCell && (
-                    <div style={{ width: '100%', padding: '0.4rem 0.6rem', background: 'rgba(30,15,60,0.88)', border: '1px solid rgba(167,139,250,0.3)', borderRadius: 10, animation: 'fadeUp 0.3s ease both' }}>
-                      <div style={{ fontSize: '0.6rem', color: '#c4b5fd', marginBottom: '0.3rem' }}>
-                        <span className="magic-loading">{'\u26A1'} Invoking ZK protection\u2026</span>
+                {/* CENTER: Garden editor (S3a) or Game board (S3b) */}
+                <div style={{ padding: '0.75rem 0.5rem', display: 'flex', flexDirection: 'column', gap: '0.45rem', alignItems: 'center', minWidth: 0 }}>
+                  {uiPhase === 'garden-setup' ? (
+                    isGardener && gameState.phase === GamePhase.WaitingForCommitment ? (
+                      <>
+                        {renderGardenEditor()}
+                        <WoodButton
+                          onClick={handleCommitGarden}
+                          disabled={isBusy || countPlants(garden) === 0}
+                          variant="green"
+                        >
+                          {loading
+                            ? <span className="magic-loading">{'\u2736'} Sealing Garden{'\u2026'}</span>
+                            : '\uD83C\uDF3F Seal Garden'}
+                        </WoodButton>
+                        <p style={dimTextStyle}>
+                          Click to plant &mdash; click again to remove. The bottom row is your home.
+                        </p>
+                      </>
+                    ) : (
+                      <div style={{ ...glassPanel, textAlign: 'center', padding: '1.5rem 1rem', width: '100%' }}>
+                        <img
+                          src={isCreature ? CREATURE_IMG : WITCH_IMG}
+                          alt=""
+                          style={{ width: 72, height: 72, objectFit: 'contain', imageRendering: 'pixelated' as const, margin: '0 auto 0.75rem', display: 'block', filter: 'drop-shadow(0 0 16px rgba(201,168,76,0.4))' }}
+                        />
+                        <h3 style={{ fontFamily: 'var(--font-serif)', fontSize: '1rem', color: 'var(--color-ink)', margin: '0 0 0.5rem', lineHeight: 1.5, textAlign: 'center' }}>
+                          {isCreature ? '\u23f3 Awaiting Gardener\u2026' : '\uD83C\uDF3F Garden Sealed!'}
+                        </h3>
+                        <p style={{ fontSize: '0.78rem', color: 'var(--color-ink-muted)', margin: '0 0 1rem', maxWidth: 320, textAlign: 'center', lineHeight: 1.6 }}>
+                          {isCreature
+                            ? 'The Gardener is planting magical herbs. The match will begin shortly.'
+                            : 'Syncing with the contract\u2026'}
+                        </p>
+                        <div style={{ display: 'inline-block', padding: '0.35rem 1rem', borderRadius: 999, background: 'rgba(201,168,76,0.15)', fontFamily: 'var(--font-body)', fontSize: '0.72rem', fontWeight: 600, color: 'var(--color-accent)', animation: 'fadeUp 1.5s ease-in-out infinite alternate' }}>
+                          <span className="magic-loading">{'\u2736'} Polling\u2026</span>
+                        </div>
                       </div>
-                      <div style={{ height: 3, borderRadius: 2, background: 'rgba(255,255,255,0.07)', overflow: 'hidden' }}>
-                        <div style={{ height: '100%', width: `${Math.min(100, zkProofStep * 25)}%`, background: 'linear-gradient(90deg, #7c3aed, #db2777)', transition: 'width 0.55s ease', borderRadius: 2 }} />
-                      </div>
-                    </div>
-                  )}
+                    )
+                  ) : (
+                    <>
+                      {renderGameBoard(true, isGardener)}
 
-                  {/* Instruction area */}
-                  <div style={{ width: '100%', padding: '0.4rem 0.6rem', background: 'rgba(15,7,32,0.55)', borderRadius: 10, border: '1px solid rgba(120,80,200,0.2)', textAlign: 'center' }}>
-                    <p style={{ fontSize: '0.7rem', color: 'rgba(220,210,255,0.82)', margin: 0, lineHeight: 1.5 }}>
-                      {isCreature && gameState.phase === GamePhase.Playing
-                        ? (gameState.creature_y === 0
-                          ? '\uD83D\uDC7B Choose a column to enter the garden'
-                          : '\uD83D\uDC7B Step into a lit cell')
-                        : isGardener && gameState.phase === GamePhase.WaitingForProof
-                        ? revealingCell
-                          ? '\u26A1 Invoking ZK protection\u2026'
-                          : '\u2728 Preparing the reveal\u2026'
-                        : '\u23F3 Waiting for the other player\u2026'}
-                    </p>
-                  </div>
-
-                  {/* ZK proof details (collapsible) */}
-                  {isGardener && lastReveal && !revealingCell && lastJournalHash && (
-                    <div style={{ width: '100%' }}>
-                      <button
-                        onClick={() => setZkDetailsOpen(v => !v)}
-                        style={{ all: 'unset', boxSizing: 'border-box', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(30,15,60,0.5)', border: '1px solid rgba(167,139,250,0.2)', borderRadius: zkDetailsOpen ? '8px 8px 0 0' : 8, padding: '0.28rem 0.55rem', cursor: 'pointer', color: 'rgba(196,181,253,0.7)', fontSize: '0.6rem', fontFamily: 'monospace' }}
-                      >
-                        <span>{'\uD83D\uDD10'} ZK Details</span>
-                        <span style={{ fontSize: '0.48rem', opacity: 0.6 }}>{zkDetailsOpen ? '\u25B2' : '\u25BC'}</span>
-                      </button>
-                      {zkDetailsOpen && (
-                        <div style={{ background: 'rgba(15,8,40,0.85)', border: '1px solid rgba(167,139,250,0.2)', borderTop: 'none', borderRadius: '0 0 8px 8px', padding: '0.45rem 0.6rem', fontFamily: 'monospace', fontSize: '0.56rem', animation: 'fadeUp 0.2s ease both' }}>
-                          {([
-                            ['Hash', lastJournalHash.slice(0, 10) + '\u2026'],
-                            ['Cell', `(${lastReveal.x}, ${lastReveal.y})`],
-                            ['Result', lastReveal.has_plant ? `${PLANT_NAMES[lastReveal.plant_type] ?? 'Plant'} \u2014 ${lastReveal.damage_dealt} dmg` : 'Empty'],
-                          ] as [string, string][]).map(([k, v]) => (
-                            <div key={k} style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.12rem' }}>
-                              <span style={{ color: 'rgba(167,139,250,0.55)', minWidth: 36 }}>{k}</span>
-                              <span style={{ color: 'rgba(230,220,255,0.8)' }}>{v}</span>
-                            </div>
-                          ))}
+                      {/* ZK Proof progress bar */}
+                      {revealingCell && (
+                        <div style={{ width: '100%', padding: '0.4rem 0.6rem', background: 'rgba(30,15,60,0.88)', border: '1px solid rgba(167,139,250,0.3)', borderRadius: 10, animation: 'fadeUp 0.3s ease both' }}>
+                          <div style={{ fontSize: '0.6rem', color: '#c4b5fd', marginBottom: '0.3rem' }}>
+                            <span className="magic-loading">{'\u26A1'} Invoking ZK protection\u2026</span>
+                          </div>
+                          <div style={{ height: 3, borderRadius: 2, background: 'rgba(255,255,255,0.07)', overflow: 'hidden' }}>
+                            <div style={{ height: '100%', width: `${Math.min(100, zkProofStep * 25)}%`, background: 'linear-gradient(90deg, #7c3aed, #db2777)', transition: 'width 0.55s ease', borderRadius: 2 }} />
+                          </div>
                         </div>
                       )}
-                    </div>
+
+                      {/* Instruction area */}
+                      <div style={{ width: '100%', padding: '0.4rem 0.6rem', background: 'rgba(15,7,32,0.55)', borderRadius: 10, border: '1px solid rgba(120,80,200,0.2)', textAlign: 'center' }}>
+                        <p style={{ fontSize: '0.7rem', color: 'rgba(220,210,255,0.82)', margin: 0, lineHeight: 1.5 }}>
+                          {isCreature && gameState.phase === GamePhase.Playing
+                            ? (gameState.creature_y === 0
+                              ? '\uD83D\uDC7B Choose a column to enter the garden'
+                              : '\uD83D\uDC7B Step into a lit cell')
+                            : isGardener && gameState.phase === GamePhase.WaitingForProof
+                            ? revealingCell
+                              ? '\u26A1 Invoking ZK protection\u2026'
+                              : '\u2728 Preparing the reveal\u2026'
+                            : '\u23F3 Waiting for the other player\u2026'}
+                        </p>
+                      </div>
+
+                      {/* ZK proof details (collapsible) */}
+                      {isGardener && lastReveal && !revealingCell && lastJournalHash && (
+                        <div style={{ width: '100%' }}>
+                          <button
+                            onClick={() => setZkDetailsOpen(v => !v)}
+                            style={{ all: 'unset', boxSizing: 'border-box', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(30,15,60,0.5)', border: '1px solid rgba(167,139,250,0.2)', borderRadius: zkDetailsOpen ? '8px 8px 0 0' : 8, padding: '0.28rem 0.55rem', cursor: 'pointer', color: 'rgba(196,181,253,0.7)', fontSize: '0.6rem', fontFamily: 'monospace' }}
+                          >
+                            <span>{'\uD83D\uDD10'} ZK Details</span>
+                            <span style={{ fontSize: '0.48rem', opacity: 0.6 }}>{zkDetailsOpen ? '\u25B2' : '\u25BC'}</span>
+                          </button>
+                          {zkDetailsOpen && (
+                            <div style={{ background: 'rgba(15,8,40,0.85)', border: '1px solid rgba(167,139,250,0.2)', borderTop: 'none', borderRadius: '0 0 8px 8px', padding: '0.45rem 0.6rem', fontFamily: 'monospace', fontSize: '0.56rem', animation: 'fadeUp 0.2s ease both' }}>
+                              {([
+                                ['Hash', lastJournalHash.slice(0, 10) + '\u2026'],
+                                ['Cell', `(${lastReveal.x}, ${lastReveal.y})`],
+                                ['Result', lastReveal.has_plant ? `${PLANT_NAMES[lastReveal.plant_type] ?? 'Plant'} \u2014 ${lastReveal.damage_dealt} dmg` : 'Empty'],
+                              ] as [string, string][]).map(([k, v]) => (
+                                <div key={k} style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.12rem' }}>
+                                  <span style={{ color: 'rgba(167,139,250,0.55)', minWidth: 36 }}>{k}</span>
+                                  <span style={{ color: 'rgba(230,220,255,0.8)' }}>{v}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
 
                 {/* RIGHT: Creature */}
-                <div style={{ padding: '0.75rem 0.75rem 0.75rem 0.4rem', borderLeft: '1px solid rgba(140,100,220,0.12)', display: 'flex', flexDirection: 'column', gap: '0.45rem', alignItems: 'center' }}>
-                  <img src={CREATURE_IMG} alt="Creature" draggable={false} style={{ height: 30, imageRendering: 'pixelated', filter: 'drop-shadow(0 0 8px rgba(255,213,79,0.4))' }} />
-                  <span style={{ fontFamily: 'var(--font-pixel)', fontSize: '0.36rem', color: '#fde68a', letterSpacing: '0.04em' }}>CREATURE</span>
-                  <div style={{ fontSize: '0.88rem', fontWeight: 700, color: displayedCreatureHp <= 2 ? '#f87171' : '#fde68a' }}>
+                <div style={{ padding: '0.75rem 0.75rem 0.75rem 0.4rem', borderLeft: '1px solid rgba(140,100,220,0.12)', display: 'flex', flexDirection: 'column', gap: '0.45rem', alignItems: 'center', minWidth: 0, overflow: 'hidden' }}>
+                  <img src={CREATURE_IMG} alt="Creature" draggable={false} style={{ height: 'clamp(30px, 5vw, 44px)', imageRendering: 'pixelated', filter: 'drop-shadow(0 0 8px rgba(255,213,79,0.4))' }} />
+                  <span style={{ fontFamily: 'var(--font-body)', fontSize: '0.55rem', fontWeight: 700, color: '#fde68a', letterSpacing: '0.08em', textTransform: 'uppercase' as const }}>Creature</span>
+                  <div style={{ fontSize: '1.1rem', fontWeight: 700, color: displayedCreatureHp <= 2 ? '#f87171' : '#fde68a', textShadow: `0 0 12px ${displayedCreatureHp <= 2 ? 'rgba(248,113,113,0.6)' : 'rgba(253,230,138,0.5)'}` }}>
                     HP {displayedCreatureHp}
                   </div>
                   <div style={{ width: '100%', height: 1, background: 'rgba(140,100,220,0.12)' }} />
-                  <span style={{ fontSize: '0.48rem', color: 'rgba(200,180,255,0.38)', textTransform: 'uppercase' as const, letterSpacing: '0.08em' }}>Abilities</span>
+                  <span style={{ fontFamily: 'var(--font-body)', fontSize: '0.62rem', fontWeight: 600, color: 'rgba(200,180,255,0.55)', textTransform: 'uppercase' as const, letterSpacing: '0.08em' }}>Abilities</span>
 
                   {/* Smell */}
                   <button
@@ -1777,9 +1785,9 @@ export function HerbalMoonlightGame({
                       transition: 'opacity 0.2s',
                     }}
                   >
-                    <img src="/assets/smell.png" alt="Smell" draggable={false} style={{ height: 36, imageRendering: 'pixelated' }} />
-                    <span style={{ fontSize: '0.55rem', color: '#c4b5fd', fontWeight: 600 }}>Smell</span>
-                    <span style={{ fontSize: '0.47rem', color: 'rgba(200,180,255,0.4)' }}>{'\u22121'} HP</span>
+                    <img src="/assets/smell.png" alt="Smell" draggable={false} style={{ height: 'clamp(30px, 6vw, 44px)', imageRendering: 'pixelated' }} />
+                    <span style={{ fontSize: '0.65rem', color: '#c4b5fd', fontWeight: 600 }}>Smell</span>
+                    <span style={{ fontSize: '0.58rem', color: 'rgba(200,180,255,0.55)' }}>{'\u22121'} HP</span>
                   </button>
 
                   {/* Instinct / Peek */}
@@ -1798,9 +1806,9 @@ export function HerbalMoonlightGame({
                       transition: 'opacity 0.2s',
                     }}
                   >
-                    <img src="/assets/adivine.png" alt="Instinct" draggable={false} style={{ height: 36, imageRendering: 'pixelated' }} />
-                    <span style={{ fontSize: '0.55rem', color: '#c4b5fd', fontWeight: 600 }}>Instinct</span>
-                    <span style={{ fontSize: '0.47rem', color: 'rgba(200,180,255,0.4)' }}>{'\u22121'} HP</span>
+                    <img src="/assets/adivine.png" alt="Instinct" draggable={false} style={{ height: 'clamp(30px, 6vw, 44px)', imageRendering: 'pixelated' }} />
+                    <span style={{ fontSize: '0.65rem', color: '#c4b5fd', fontWeight: 600 }}>Instinct</span>
+                    <span style={{ fontSize: '0.58rem', color: 'rgba(200,180,255,0.55)' }}>{'\u22121'} HP</span>
                   </button>
 
                   {/* Sense result (compact) */}
@@ -1835,7 +1843,6 @@ export function HerbalMoonlightGame({
               )}
             </div>
           );
-
         })()}
 
       </div>{/* end contentCol */}
