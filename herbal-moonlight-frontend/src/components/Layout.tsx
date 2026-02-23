@@ -49,9 +49,7 @@ export function Layout({ title, subtitle, children }: LayoutProps) {
 
       <main className="studio-main">{children}</main>
 
-      <footer className="studio-footer">
-        <span>Powered by ZK Magic &amp; Stellar Game Studio</span>
-      </footer>
+      <footer className="studio-footer" />
     </div>
   );
 }

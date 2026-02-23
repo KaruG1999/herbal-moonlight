@@ -27,9 +27,9 @@ export const PLANT_EMOJI: Record<number, string> = {
 /** Pixel-art sprite paths — served from public/assets/ */
 export const PLANT_IMG: Record<number, string> = {
   0: '',
-  1: '/assets/lavender.png',
-  2: '/assets/mint.png',
-  3: '/assets/mandrake.png',
+  1: '/assets/lavender2.png',
+  2: '/assets/mint2.png',
+  3: '/assets/mandrake2.png',
 };
 
 export const CREATURE_IMG = '/assets/ghost.png';
@@ -117,6 +117,23 @@ export function validateGarden(garden: GardenLayout): { valid: boolean; error?: 
   if (plantCount > MAX_PLANTS) {
     return { valid: false, error: `Too many plants (${plantCount}/${MAX_PLANTS})` };
   }
+  
+  // Note: Home row (y===4) is now valid for planting as a defensive strategy
+  // No restrictions on home row placement
+  
+  // Validate that all cells contain valid plant types (0-3)
+  for (let i = 0; i < garden.length; i++) {
+    const cell = garden[i];
+    if (!Number.isInteger(cell) || cell < 0 || cell > 3) {
+      return { valid: false, error: `Invalid plant type at position ${i}: ${cell}` };
+    }
+  }
+  
+  // Validate garden is complete and correct size
+  if (garden.length !== GRID_SIZE * GRID_SIZE) {
+    return { valid: false, error: `Garden size mismatch: expected ${GRID_SIZE * GRID_SIZE} cells, got ${garden.length}` };
+  }
+  
   return { valid: true };
 }
 

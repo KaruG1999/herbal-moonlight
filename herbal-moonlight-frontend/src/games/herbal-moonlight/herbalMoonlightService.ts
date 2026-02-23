@@ -267,12 +267,22 @@ export class HerbalMoonlightService {
       authTtlMinutes ?? DEFAULT_AUTH_TTL_MINUTES
     );
 
-    const sentTx = await signAndSendViaLaunchtube(
-      tx,
-      DEFAULT_METHOD_OPTIONS.timeoutInSeconds,
-      validUntilLedgerSeq
-    );
-    return sentTx.result;
+    try {
+      const sentTx = await signAndSendViaLaunchtube(
+        tx,
+        DEFAULT_METHOD_OPTIONS.timeoutInSeconds,
+        validUntilLedgerSeq
+      );
+      return sentTx.result;
+    } catch (err) {
+      if (err instanceof Error && err.message.includes('-5')) {
+        throw new Error('The stars are misaligned. Please wait a moment for the magical energies to stabilize and try again.');
+      }
+      if (err instanceof Error && err.message.includes('Transaction failed!')) {
+        throw new Error('Garden commitment failed. Please ensure your connection is stable and try again.');
+      }
+      throw err;
+    }
   }
 
   async creatureMove(
@@ -303,6 +313,9 @@ export class HerbalMoonlightService {
       );
       return sentTx.result;
     } catch (err) {
+      if (err instanceof Error && err.message.includes('-5')) {
+        throw new Error('The stars are misaligned. Please wait a moment for the magical energies to stabilize and try again.');
+      }
       if (err instanceof Error && err.message.includes('Transaction failed!')) {
         throw new Error('Move failed - check if it is your turn and the move is valid');
       }
@@ -347,8 +360,23 @@ export class HerbalMoonlightService {
       }
       return raw as CellRevealResult | null;
     } catch (err) {
+      if (err instanceof Error && err.message.includes('-5')) {
+        throw new Error('The stars are misaligned. Please wait a moment for the magical energies to stabilize and try again.');
+      }
       if (err instanceof Error && err.message.includes('Transaction failed!')) {
-        throw new Error('Reveal failed - check proof data and game state');
+        // Extract specific contract error details for better debugging
+        const message = err.message;
+        if (message.includes('Contract, #3')) {
+          throw new Error('Reveal failed: Garden commitment mismatch. Try committing your garden again.');
+        } else if (message.includes('Contract, #2')) {
+          throw new Error('Reveal failed: Invalid session or game state. The game may have ended.');
+        } else if (message.includes('Contract, #1')) {
+          throw new Error('Reveal failed: Not your turn to reveal. Wait for the creature to move.');
+        } else if (message.includes('HostError')) {
+          throw new Error('Reveal failed: Contract validation error. Check journal data and game commitment.');
+        } else {
+          throw new Error('Reveal failed: Check proof data and game state');
+        }
       }
       throw err;
     }

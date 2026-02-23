@@ -1,4 +1,5 @@
 import { Buffer } from "buffer";
+import * as StellarSdk from "@stellar/stellar-sdk";
 import { Address } from "@stellar/stellar-sdk";
 import {
   AssembledTransaction,
@@ -21,7 +22,9 @@ import type {
   Timepoint,
   Duration,
 } from "@stellar/stellar-sdk/contract";
-export * from "@stellar/stellar-sdk";
+
+// Re-export StellarSdk for ESM compatibility with Vite
+export { StellarSdk };
 export * as contract from "@stellar/stellar-sdk/contract";
 export * as rpc from "@stellar/stellar-sdk/rpc";
 

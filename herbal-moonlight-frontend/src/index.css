@@ -11,7 +11,8 @@
 :root {
   --font-display: "Lora", "Times New Roman", serif;
   --font-serif: "Lora", "Times New Roman", serif;
-  --font-body: "Inter", "Helvetica Neue", Arial, sans-serif;
+  --font-heading: "Cinzel", "Lora", "Times New Roman", serif;
+  --font-body: "Quicksand", "Inter", "Helvetica Neue", Arial, sans-serif;
   --font-mono: "IBM Plex Mono", "Fira Code", "JetBrains Mono", monospace;
   --font-pixel: "Press Start 2P", monospace;
   --font-game: "Yusei Magic", serif;
@@ -361,5 +362,23 @@ select:focus {
 @media (max-width: 480px) {
   .player-cards-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+/* Welcome screen (S2): witch + panel side-by-side on desktop,
+   stacked on narrow screens */
+.welcome-row {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+}
+
+@media (max-width: 680px) {
+  .welcome-row {
+    flex-direction: column;
+    align-items: center;
+  }
+  .welcome-row .welcome-witch {
+    height: clamp(120px, 28vw, 200px) !important;
   }
 }

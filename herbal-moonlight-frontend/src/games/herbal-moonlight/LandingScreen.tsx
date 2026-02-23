@@ -483,15 +483,6 @@ export function LandingScreen({
           <ZkTutorial />
         </WoodPanel>
 
-        {/* Footer */}
-        <p style={{
-          marginTop: '1rem',
-          fontSize: '0.65rem', color: 'rgba(200, 180, 140, 0.45)',
-          textAlign: 'center', fontFamily: 'var(--font-serif)',
-          letterSpacing: '0.02em',
-        }}>
-          Powered by ZK Magic &amp; Stellar Game Studio
-        </p>
       </div>
     </div>
   );

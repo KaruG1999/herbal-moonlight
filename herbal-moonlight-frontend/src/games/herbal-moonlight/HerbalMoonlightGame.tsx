@@ -148,7 +148,7 @@ function HowToPlay() {
         <div className="mt-2 p-4 bg-[#0a0e1a]/80 border border-purple-500/15 rounded-xl text-xs text-purple-200/70 space-y-2" style={{ animation: 'fadeUp 0.3s ease both' }}>
           <p><strong className="text-purple-200">Two Roles:</strong> The <strong className="text-purple-300">Gardener</strong> (witch) places magical plants in a 5&times;5 garden. The <strong className="text-amber-300">Creature</strong> (ghost) tries to cross it from top to bottom.</p>
           <p><strong className="text-purple-200">ZK Mechanic:</strong> The garden layout is hidden via a SHA-256 commitment. The Creature cannot see where plants are placed. Each cell is only revealed when the Creature steps on it, using a cryptographic proof.</p>
-          <p><strong className="text-purple-200">Plants deal damage:</strong> Lavender (1), Mint (2), Mandrake (3). The Creature starts with 10 HP. If HP reaches 0, the Gardener wins. If the Creature reaches row 5 (the house), the Creature wins.</p>
+          <p><strong className="text-purple-200">Plants deal damage:</strong> Lavender (1), Mint (2), Mandrake (3). The Creature starts with 6 HP (8 on Full Moon). If HP reaches 0, the Gardener wins. If the Creature reaches row 5 (the house), the Creature wins.</p>
           <p><strong className="text-purple-200">Moon Phases:</strong> Each game has a random moon phase that modifies damage and HP.</p>
           <p><strong className="text-purple-200">Turn Flow:</strong> Creature moves &rarr; Gardener reveals cell (ZK proof) &rarr; damage is applied on-chain &rarr; repeat.</p>
         </div>
@@ -210,7 +210,6 @@ export function HerbalMoonlightGame({
   const [sessionIdCopied, setSessionIdCopied] = useState(false);
   const [devGearOpen, setDevGearOpen] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
-  const [welcomeDone, setWelcomeDone] = useState(false);
 
   // Garden setup phase (Gardener only)
   const [garden, setGarden] = useState<GardenLayout>(createEmptyGarden);
@@ -250,7 +249,6 @@ export function HerbalMoonlightGame({
     && DevWalletService.isPlayerAvailable(2);
 
   useEffect(() => { setPlayer1Address(userAddress); }, [userAddress]);
-  useEffect(() => { if (sessionId > 0) setWelcomeDone(false); }, [sessionId]);
 
   // Clean up prepare-transaction poll on unmount
   useEffect(() => {
@@ -273,21 +271,33 @@ export function HerbalMoonlightGame({
       isGardener &&
       gardenCommitment &&
       !revealingCell &&
-      !actionLock.current &&
-      autoRevealTurnRef.current !== gameState.turn_number
+      !actionLock.current
     ) {
+      // Check if this turn has already been attempted
+      if (autoRevealTurnRef.current === gameState.turn_number) {
+        return; // Already tried this turn
+      }
+
+      // Mark this turn as being attempted
       autoRevealTurnRef.current = gameState.turn_number;
-      handleRevealCell();
+      
+      // Trigger the reveal but don't wait or catch here
+      // Errors will be displayed in the UI via setError
+      handleRevealCell().catch((err) => {
+        console.error('[Auto-reveal failed]', err);
+        // Reset the turn ref to allow manual retry button to work
+        autoRevealTurnRef.current = null;
+      });
     } else if (gameState?.phase !== GamePhase.WaitingForProof) {
       // Reset so next WaitingForProof fires correctly
       autoRevealTurnRef.current = null;
     }
   }, [gameState?.phase, gameState?.turn_number, isGardener, !!gardenCommitment, revealingCell]);
 
-  // Displayed HP accounts for local Spirit Sense cost (resets on each move)
-  const displayedCreatureHp = gameState
-    ? Math.max(0, gameState.creature_hp - spiritSenseHpCost)
-    : 0;
+  // HP display always reflects on-chain truth
+  const displayedCreatureHp = gameState?.creature_hp ?? 0;
+  // Effective HP accounts for local Spirit Sense cost (not yet committed to chain)
+  const effectiveCreatureHp = Math.max(0, displayedCreatureHp - spiritSenseHpCost);
 
   // ====================================================================
   // Helpers
@@ -322,6 +332,9 @@ export function HerbalMoonlightGame({
    * Fetches game state for a given session ID.
    * Accepts an explicit `sid` parameter to avoid the race condition where
    * the ref hasn't been updated yet after a `setSessionId` call.
+   * 
+   * Prevents race conditions by validating that the response is for the current session
+   * and is not stale data.
    */
   const fetchGameState = useCallback(async (sid?: number) => {
     if (pollingInFlight.current) return;
@@ -329,23 +342,35 @@ export function HerbalMoonlightGame({
     try {
       const targetSid = sid ?? sessionIdRef.current;
       const session = await service.getSession(targetSid);
-      setGameState(session);
-      if (session) {
-        // Try to restore garden from localStorage if we don't have it in state
-        if (!gardenCommitmentRef.current && session.gardener === userAddressRef.current) {
-          const stored = loadGardenFromStorage(targetSid);
-          if (stored) {
-            setGarden(stored.garden);
-            setGardenCommitment(stored.commitment);
+      
+      // Only update if this is the session we're currently looking at
+      if (session && session.session_id === targetSid) {
+        setGameState(prevState => {
+          // Prevent overwriting with stale data (older turn number)
+          if (prevState && prevState.turn_number > session.turn_number) {
+            console.warn('[fetchGameState] Ignored stale state update');
+            return prevState;
           }
-        }
+          return session;
+        });
+        
+        if (session) {
+          // Try to restore garden from localStorage if we don't have it in state
+          if (!gardenCommitmentRef.current && session.gardener === userAddressRef.current) {
+            const stored = loadGardenFromStorage(targetSid);
+            if (stored) {
+              setGarden(stored.garden);
+              setGardenCommitment(stored.commitment);
+            }
+          }
 
-        if (session.phase === GamePhase.Finished) {
-          setUiPhase('complete');
-        } else if (session.phase === GamePhase.WaitingForCommitment) {
-          setUiPhase('garden-setup');
-        } else {
-          setUiPhase('play');
+          if (session.phase === GamePhase.Finished) {
+            setUiPhase('complete');
+          } else if (session.phase === GamePhase.WaitingForCommitment) {
+            setUiPhase('garden-setup');
+          } else {
+            setUiPhase('play');
+          }
         }
       }
     } catch (err) {
@@ -392,6 +417,8 @@ export function HerbalMoonlightGame({
     setGardenCommitment(null);
     setSelectedPlantType(1);
     setLastReveal(null);
+    setSpiritSenseHpCost(0);
+    setSpiritSenseResult(null);
     setLoading(false);
     setQuickstartLoading(false);
     setError(null);
@@ -618,10 +645,11 @@ export function HerbalMoonlightGame({
 
   const handleGardenCellClick = (x: number, y: number) => {
     const idx = y * GRID_SIZE + x;
+
     setGarden(prev => {
       const next = [...prev];
       if (next[idx] === selectedPlantType) {
-        next[idx] = 0; // Remove
+        next[idx] = 0; // Remove herb
       } else {
         // Check max plants
         const currentCount = countPlants(next);
@@ -631,6 +659,13 @@ export function HerbalMoonlightGame({
       return next;
     });
   };
+
+  // Helper function to check if garden can be sealed
+  const canSealGarden = useCallback(() => {
+    const plantCount = countPlants(garden);
+    // Can seal if at least 1 plant and at most MAX_PLANTS
+    return plantCount > 0 && plantCount <= MAX_PLANTS;
+  }, [garden]);
 
   const handleCommitGarden = async () => {
     await runAction(async () => {
@@ -644,11 +679,12 @@ export function HerbalMoonlightGame({
         const commitment = await computeGardenCommitment(garden);
         setGardenCommitment(commitment);
 
-        // Persist garden + commitment so page refresh doesn't break reveals
-        saveGardenToStorage(sessionId, garden, commitment);
-
         const signer = getContractSigner();
         await service.commitGarden(sessionId, userAddress, commitment, signer);
+
+        // Only persist garden + commitment AFTER successful on-chain confirmation
+        // This ensures the stored commitment matches what the contract knows about
+        saveGardenToStorage(sessionId, garden, commitment);
 
         setSuccess('Garden committed! The game begins.');
         setUiPhase('play');
@@ -656,6 +692,8 @@ export function HerbalMoonlightGame({
         setTimeout(() => setSuccess(null), 2000);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to commit garden');
+        // Clear commitment if transaction failed
+        setGardenCommitment(null);
       } finally {
         setLoading(false);
       }
@@ -677,8 +715,6 @@ export function HerbalMoonlightGame({
         const signer = getContractSigner();
         await service.creatureMove(sessionId, userAddress, x, y, signer);
 
-        // Spirit Sense cost is "committed" — reset for next turn
-        setSpiritSenseHpCost(0);
         setSuccess(`Moved to (${x}, ${y}). Waiting for Gardener to reveal...`);
         await fetchGameState(sessionId);
         setTimeout(() => setSuccess(null), 3000);
@@ -697,6 +733,17 @@ export function HerbalMoonlightGame({
   const handleRevealCell = async () => {
     if (!gameState || !gardenCommitment) {
       setError('Garden commitment not found. Did you commit your garden in this session?');
+      return;
+    }
+
+    // Additional validation before reveal
+    if (gameState.phase !== GamePhase.WaitingForProof) {
+      setError('Not your turn to reveal. Wait for the creature to move.');
+      return;
+    }
+
+    if (!isGardener) {
+      setError('Only the Gardener can reveal cells.');
       return;
     }
 
@@ -726,9 +773,17 @@ export function HerbalMoonlightGame({
         setZkProofStep(4); // step 4: submitting to chain
 
         const signer = getContractSigner();
+        const prevOnChainHp = gameState?.creature_hp ?? null;
+        console.debug('[reveal] prevOnChainHp:', prevOnChainHp, 'prevDamageReduction:', prevDamageReduction);
         const result = await service.revealCell(
           sessionId, userAddress, journalBytes, journalHash, emptySeal, signer
         );
+
+        // Validate result before processing
+        if (!result) {
+          setError('Reveal failed: No response from contract. Please try again.');
+          return;
+        }
 
         setLastReveal(result);
         if (result?.has_plant && result.damage_dealt > 0) {
@@ -739,16 +794,25 @@ export function HerbalMoonlightGame({
           setBoardShake(true);
           setTimeout(() => setBoardShake(false), 500);
           const mistLine = prevDamageReduction > 0
-            ? ' \ud83c\udf38 Calming Mist absorbed 1 damage!'
+            ? ' Calming Mist absorbed 1 damage!'
             : '';
-          setSuccess(`\u26a1 Magic energy released. Creature takes ${result.damage_dealt} damage.${mistLine}`);
+          setSuccess(`Magic energy released. Creature takes ${result.damage_dealt} damage.${mistLine}`);
         } else if (result?.has_plant) {
-          const mistLine = prevDamageReduction > 0 ? ' \ud83c\udf38 Calming Mist absorbed the hit!' : '';
-          setSuccess(`\u2728 Plant whispered, but dealt no damage this time.${mistLine}`);
+          const mistLine = prevDamageReduction > 0 ? ' Calming Mist absorbed the hit!' : '';
+          setSuccess(`Plant whispered — no damage this time.${mistLine}`);
         } else {
-          setSuccess('\u2591 Empty soil. The path stays dark.');
+          setSuccess('Empty soil. The path stays dark.');
         }
         await fetchGameState(sessionId);
+        try {
+          const fresh = await service.getSession(sessionId);
+          console.debug('[reveal] result:', result, 'fresh.creature_hp:', fresh?.creature_hp);
+          if (result?.damage_dealt && fresh && typeof prevOnChainHp === 'number' && fresh.creature_hp > prevOnChainHp) {
+            console.warn('[reveal] HP increased after hit — prev:', prevOnChainHp, 'now:', fresh.creature_hp, 'damage:', result.damage_dealt);
+          }
+        } catch (e) {
+          console.debug('[reveal] unable to fetch fresh session for debug:', e);
+        }
         setTimeout(() => setSuccess(null), 3000);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Reveal failed');
@@ -767,7 +831,7 @@ export function HerbalMoonlightGame({
 
   const handleSpiritSense = (ability: 'peek' | 'smell') => {
     if (!gameState) return;
-    if (displayedCreatureHp <= 1) {
+    if (effectiveCreatureHp <= 1) {
       setError('Not enough HP to use Spirit Sense (need at least 2 HP).');
       return;
     }
@@ -992,41 +1056,7 @@ export function HerbalMoonlightGame({
         </span>
       </div>
 
-      {/* Plant type selector — glass panel */}
-      <div style={{ ...glassPanel, display: 'flex', gap: '0.5rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-        {[1, 2, 3].map(type => (
-          <button
-            key={type}
-            onClick={() => setSelectedPlantType(type)}
-            title={
-              type === 1 ? 'Lavender · 1 DMG · Reduces next damage by 1'
-              : type === 2 ? 'Mint · 2 DMG · Standard herb'
-              : 'Mandrake · 3 DMG · High-damage root'
-            }
-            style={{
-              all: 'unset',
-              boxSizing: 'border-box',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.4rem',
-              padding: '0.4rem 0.7rem',
-              borderRadius: 10,
-              fontWeight: 700,
-              fontSize: '0.75rem',
-              cursor: 'pointer',
-              fontFamily: 'var(--font-body)',
-              color: selectedPlantType === type ? 'var(--color-ink)' : 'var(--color-ink-muted)',
-              background: selectedPlantType === type ? 'rgba(123,104,174,0.3)' : 'transparent',
-              border: selectedPlantType === type ? '2px solid rgba(179,136,255,0.5)' : '2px solid transparent',
-              transition: 'all 0.15s',
-            }}
-          >
-            <img src={PLANT_IMG[type]} alt="" style={{ width: 22, height: 22, imageRendering: 'pixelated' as const }} />
-            {PLANT_NAMES[type]}
-            <span style={{ fontSize: '0.6rem', opacity: 0.5 }}>({type})</span>
-          </button>
-        ))}
-      </div>
+
 
       {/* Garden grid — cells are direct children of the board container (CSS Grid) */}
       <div style={boardContainerStyle}>
@@ -1050,7 +1080,7 @@ export function HerbalMoonlightGame({
               className="garden-tile"
               style={{
                 ...cellBaseStyle,
-                ...(isHouseRow ? { background: 'radial-gradient(ellipse at 30% 30%, rgba(100,72,20,0.5) 0%, transparent 65%), linear-gradient(135deg, #4a3520 0%, #2e1f0d 100%)', border: '2px solid rgba(201,168,76,0.55)' } : {}),
+                ...(isHouseRow ? { background: 'radial-gradient(ellipse at 30% 30%, rgba(100,72,20,0.5) 0%, transparent 65%), linear-gradient(135deg, #4a3520 0%, #2e1f0d 100%)', border: '2px solid rgba(201,168,76,0.55)', filter: 'grayscale(0.5) brightness(0.8)' } : {}),
                 ...(cellPlant > 0 ? { boxShadow: cellShadow } : isHouseRow ? { boxShadow: cellShadow } : {}),
               }}
               title={`(${x}, ${y}) - ${PLANT_NAMES[cellPlant] || 'Empty'}`}
@@ -1064,7 +1094,7 @@ export function HerbalMoonlightGame({
       </div>
 
       <p style={{ fontFamily: 'var(--font-body)', fontSize: '0.7rem', textAlign: 'center', color: 'var(--color-ink-muted)', lineHeight: 1.8, margin: 0 }}>
-        Click to place. Click again to remove. Bottom row = house.
+         Click to plant. Click again to remove. The bottom row is your Home—use it wisely for defense.
       </p>
     </div>
   );
@@ -1115,22 +1145,28 @@ export function HerbalMoonlightGame({
 
         {/* ── Main create buttons ── */}
         {createMode === 'create' && !exportedAuthEntryXDR && (
+          quickstartLoading ? (
+            /* Quickstart in progress — hide all other buttons to prevent flash */
+            <div style={{ textAlign: 'center', padding: '1.5rem 1rem' }}>
+              <span className="magic-loading" style={{ fontFamily: 'var(--font-body)', fontSize: '0.88rem', color: 'rgba(195,155,90,0.9)' }}>
+                Setting up game...
+              </span>
+            </div>
+          ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem', width: '100%', maxWidth: 360, margin: '0 auto' }}>
             <WoodButton onClick={handlePrepareTransaction} disabled={isBusy} variant="green">
               {loading
-                ? <span className="magic-loading">{'\u2736'} Opening portal{'\u2026'}</span>
+                ? <span className="magic-loading">Opening portal...</span>
                 : 'Start Journey'}
             </WoodButton>
 
             <WoodButton onClick={() => { setCreateMode('import'); setError(null); setSuccess(null); }} variant="blue">
-              {'\uD83D\uDC7B'} Enter the Woods
+              Enter the Woods
             </WoodButton>
 
             {quickstartAvailable && (
               <WoodButton onClick={handleQuickStart} disabled={isBusy} variant="purple">
-                {quickstartLoading
-                  ? <span className="magic-loading">{'\u2736'} Casting spell{'\u2026'}</span>
-                  : '\u26A1 Quickstart (Dev)'}
+                Quickstart (Dev)
               </WoodButton>
             )}
 
@@ -1160,10 +1196,11 @@ export function HerbalMoonlightGame({
                   fontFamily: 'var(--font-body)',
                 }}
               >
-                {loading ? '\u23F3' : 'Load Game'}
+                {loading ? '...' : 'Load Game'}
               </button>
             </div>
           </div>
+          )  // end ternary else
         )}
 
         {/* ── Auth entry XDR (after Gardener signs) ── */}
@@ -1176,7 +1213,7 @@ export function HerbalMoonlightGame({
               <code style={{ fontSize: '0.62rem', fontFamily: 'var(--font-mono)', color: 'rgba(150,200,180,0.8)', wordBreak: 'break-all' }}>{exportedAuthEntryXDR}</code>
             </div>
             <WoodButton onClick={() => copyToClipboard(exportedAuthEntryXDR!)} variant="primary">
-              {authEntryCopied ? '\u2713 Copied!' : 'Copy Auth Entry'}
+              {authEntryCopied ? 'Copied!' : 'Copy Auth Entry'}
             </WoodButton>
             <p style={{ fontSize: '0.68rem', textAlign: 'center', color: 'rgba(170,130,80,0.6)', fontFamily: 'var(--font-mono)', margin: 0 }}>
               Session #{sessionId} &mdash; Send to the Creature player. Polling&hellip;
@@ -1189,7 +1226,7 @@ export function HerbalMoonlightGame({
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem', width: '100%', maxWidth: 360, margin: '0 auto' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <p style={{ fontSize: '0.82rem', fontWeight: 700, color: 'rgba(228,195,135,0.9)', margin: 0 }}>
-                {'\uD83D\uDC7B'} Join as Creature
+                Join as Creature
               </p>
               <button
                 onClick={() => { setCreateMode('create'); setError(null); setSuccess(null); }}
@@ -1249,8 +1286,8 @@ export function HerbalMoonlightGame({
               variant="primary"
             >
               {loading
-                ? <span className="magic-loading">{'\u2736'} Awakening{'\u2026'}</span>
-                : '\uD83D\uDC7B Awaken as Creature'}
+                ? <span className="magic-loading">Awakening...</span>
+                : 'Awaken as Creature'}
             </WoodButton>
           </div>
         )}
@@ -1363,75 +1400,22 @@ export function HerbalMoonlightGame({
       </p>
       <div style={{ marginTop: '0.75rem', display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
         {([
-          ['\uD83C\uDF3F Lavender', '1 HP damage', 'Calming Mist on next hit'],
-          ['\uD83C\uDF3F Mint', '2 HP damage', 'Standard herb'],
-          ['\uD83C\uDF3F Mandrake', '3 HP damage', 'Rare, powerful'],
-        ] as [string, string, string][]).map(([name, dmg, note]) => (
-          <div key={name} style={{ fontSize: '0.72rem' }}>
-            <div style={{ fontWeight: 700, color: 'var(--color-ink)' }}>{name}</div>
-            <div style={{ color: 'var(--color-error)' }}>{dmg}</div>
-            <div style={{ color: 'var(--color-ink-muted)' }}>{note}</div>
+          ['/assets/lavender2.png', 'Lavender', '1 HP damage', 'Calming Mist on next hit'],
+          ['/assets/mint2.png', 'Mint', '2 HP damage', 'Standard herb'],
+          ['/assets/mandrake2.png', 'Mandrake', '3 HP damage', 'Rare, powerful'],
+        ] as [string, string, string, string][]).map(([img, name, dmg, note]) => (
+          <div key={name} style={{ fontSize: '0.72rem', display: 'flex', gap: '0.45rem', alignItems: 'flex-start' }}>
+            <img src={img} alt={name} draggable={false} style={{ width: 22, height: 22, imageRendering: 'pixelated', flexShrink: 0 }} />
+            <div>
+              <div style={{ fontWeight: 700, color: 'var(--color-ink)' }}>{name}</div>
+              <div style={{ color: 'var(--color-error)' }}>{dmg}</div>
+              <div style={{ color: 'var(--color-ink-muted)' }}>{note}</div>
+            </div>
           </div>
         ))}
       </div>
     </div>
   ) : null;
-
-  // ── Screen 2: Welcome (shown first time garden-setup phase starts) ────────
-  if (uiPhase === 'garden-setup' && gameState && !welcomeDone) {
-    return (
-      <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-        {forestBgLayers}
-        <GameNavbar {...sharedNavProps} />
-        {renderInfoPanel()}
-
-        {/* Witch fixed at bottom-left — doesn't affect panel layout */}
-        <img
-          src="/brujita.png"
-          alt="Gardener"
-          draggable={false}
-          style={{
-            position: 'fixed',
-            bottom: 0,
-            left: 0,
-            height: '48vh',
-            imageRendering: 'pixelated',
-            filter: 'drop-shadow(0 0 24px rgba(201,168,76,0.5))',
-            zIndex: 3,
-            pointerEvents: 'none',
-          }}
-        />
-
-        {/* Centered panel — flex centers it vertically ignoring the fixed witch */}
-        <div style={{ width: '80%', maxWidth: 700, zIndex: 4, marginTop: '4rem' }}>
-          <WoodPanel maxWidth={9999}>
-            <h2 style={{ fontFamily: 'var(--font-game)', fontSize: '1.3rem', color: 'rgba(238,212,158,0.95)', margin: 0, textAlign: 'center', textShadow: '0 2px 8px rgba(0,0,0,0.5)' }}>
-              Welcome to Herbal Moonlight!
-            </h2>
-            <p style={{ fontFamily: 'var(--font-serif)', fontSize: '0.82rem', color: 'rgba(200,175,130,0.82)', textAlign: 'center', fontStyle: 'italic', lineHeight: 1.65, margin: '0.2rem 0 0.4rem' }}>
-              &ldquo;Plant your herbs in secret and defend your garden from night creatures!&rdquo;
-            </p>
-            {/* Baby plant trio */}
-            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', padding: '0.25rem 0' }}>
-              {[
-                ['/assets/lavender2.png', 'Lavender'],
-                ['/assets/mint2.png', 'Mint'],
-                ['/assets/mandrake2.png', 'Mandrake'],
-              ].map(([src, label]) => (
-                <div key={label} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-                  <img src={src} alt={label} draggable={false} style={{ height: 46, imageRendering: 'pixelated', filter: 'drop-shadow(0 0 6px rgba(201,168,76,0.3))' }} />
-                  <span style={{ fontSize: '0.52rem', color: 'rgba(200,175,130,0.6)', fontFamily: 'var(--font-body)' }}>{label}</span>
-                </div>
-              ))}
-            </div>
-            <WoodButton onClick={() => setWelcomeDone(true)} variant="primary">
-              Begin Adventure
-            </WoodButton>
-          </WoodPanel>
-        </div>
-      </div>
-    );
-  }
 
   // ── Screen 4: Finish (game complete) ────────────────────────────────────
   if (uiPhase === 'complete' && gameState) {
@@ -1448,29 +1432,50 @@ export function HerbalMoonlightGame({
         <GameNavbar {...sharedNavProps} />
         {renderInfoPanel()}
 
-        <div style={{ width: '85%', maxWidth: 680, padding: '5.5rem 0 2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, justifyContent: 'center', gap: '0.75rem' }}>
+        <div style={{ width: '85%', maxWidth: 600, padding: '5.5rem 0 2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, justifyContent: 'center', gap: '0.75rem' }}>
 
-          <WoodPanel maxWidth={9999}>
-            {/* Single win OR lose display */}
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem', textAlign: 'center' }}>
-              <div style={{ fontSize: '1.1rem', fontWeight: 700, fontFamily: 'var(--font-game)', color: playerWon ? '#86efac' : '#f87171', textShadow: `0 0 16px ${playerWon ? 'rgba(134,239,172,0.6)' : 'rgba(248,113,113,0.6)'}` }}>
-                {playerWon ? 'You Win!' : 'You lose!'}
+          {/* Glassmorphism card — floats directly over the forest background */}
+          <div style={{
+            width: '100%',
+            background: 'rgba(10, 14, 26, 0.72)',
+            backdropFilter: 'blur(14px)',
+            WebkitBackdropFilter: 'blur(14px)',
+            border: '1px solid rgba(140, 100, 220, 0.35)',
+            borderRadius: 24,
+            padding: '1.75rem',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '1rem',
+            animation: 'fadeUp 0.4s ease both',
+          }}>
+
+            {/* Win / Lose header */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', textAlign: 'center' }}>
+              <div style={{
+                fontSize: '1.4rem', fontWeight: 700,
+                fontFamily: 'var(--font-heading)',
+                color: playerWon ? '#86efac' : '#f87171',
+                textShadow: `0 0 20px ${playerWon ? 'rgba(134,239,172,0.55)' : 'rgba(248,113,113,0.55)'}`,
+                letterSpacing: '0.04em',
+              }}>
+                {playerWon ? 'You Win!' : 'You Lose!'}
               </div>
               <img
                 src={playerWon ? '/assets/Win-Troll.png' : '/assets/Lose-died.png'}
                 alt={playerWon ? 'Win' : 'Lose'}
                 draggable={false}
-                style={{ height: 'clamp(70px, 15vw, 110px)', imageRendering: 'pixelated', filter: `drop-shadow(0 0 12px rgba(${playerWon ? '134,239,172' : '240,100,100'},0.4))` }}
+                style={{ height: 'clamp(70px, 15vw, 110px)', imageRendering: 'pixelated', filter: `drop-shadow(0 0 14px rgba(${playerWon ? '134,239,172' : '240,100,100'},0.45))` }}
               />
             </div>
 
             {/* Battle Report */}
-            <div style={{ padding: '0.6rem 0.75rem', background: 'rgba(8,4,1,0.55)', borderRadius: 8, border: '1px solid rgba(130,90,40,0.25)' }}>
-              <div style={{ fontSize: '0.62rem', fontWeight: 700, color: 'rgba(195,155,90,0.75)', marginBottom: '0.45rem', textTransform: 'uppercase' as const, letterSpacing: '0.08em' }}>
+            <div style={{ padding: '0.75rem', background: 'rgba(0,0,0,0.35)', borderRadius: 12, border: '1px solid rgba(140,100,220,0.2)' }}>
+              <div style={{ fontFamily: 'var(--font-heading)', fontSize: '0.65rem', fontWeight: 700, color: 'rgba(195,155,90,0.85)', marginBottom: '0.6rem', textTransform: 'uppercase' as const, letterSpacing: '0.1em' }}>
                 Battle Report
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', fontWeight: 700, color: '#4ecdc4', marginBottom: '0.3rem' }}>
-                <span>{'\uD83D\uDD12'} Forever Hidden</span>
+              {/* Forever Hidden — prominent */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.82rem', fontWeight: 700, color: '#4ecdc4', marginBottom: '0.45rem', padding: '0.35rem 0.5rem', background: 'rgba(78,205,196,0.08)', borderRadius: 8 }}>
+                <span>Forever Hidden</span>
                 <span>{foreverHidden} / 25</span>
               </div>
               {[
@@ -1479,7 +1484,7 @@ export function HerbalMoonlightGame({
                 ['Turns played', String(gameState.turn_number)],
                 ['Moon phase', `${moonPhaseEmoji(gameState.moon_phase)} ${moonPhaseLabel(gameState.moon_phase)}`],
               ].map(([label, value]) => (
-                <div key={label} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'rgba(200,175,130,0.78)', marginBottom: '0.22rem' }}>
+                <div key={label} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'rgba(200,175,130,0.82)', marginBottom: '0.25rem' }}>
                   <span>{label}</span>
                   <span style={{ fontWeight: 600 }}>{value}</span>
                 </div>
@@ -1487,26 +1492,22 @@ export function HerbalMoonlightGame({
             </div>
 
             {isGardener && gardenerWon && gardenCommitment && (
-              <p style={{ fontSize: '0.62rem', color: 'rgba(200,180,255,0.52)', textAlign: 'center', fontFamily: 'monospace', margin: 0 }}>
-                {'\uD83D\uDD10'} Garden hash: {gardenCommitment.toString('hex').slice(0, 8)}&hellip;
+              <p style={{ fontSize: '0.6rem', color: 'rgba(200,180,255,0.5)', textAlign: 'center', fontFamily: 'monospace', margin: 0 }}>
+                Garden hash: {gardenCommitment.toString('hex').slice(0, 8)}&hellip; — layout sealed forever.
               </p>
             )}
 
-            {/* Buttons — outlined-blue + solid-indigo per Figma S4 */}
-            <div style={{ display: 'flex', gap: '0.55rem' }}>
+            {/* Action buttons */}
+            <div style={{ display: 'flex', gap: '0.6rem' }}>
               <div style={{ flex: 1 }}>
-                <WoodButton onClick={handleStartNewGame} variant="outlined-blue">Try Again</WoodButton>
+                <WoodButton onClick={handleStartNewGame} variant="blue">Try Again</WoodButton>
               </div>
               <div style={{ flex: 1 }}>
-                <WoodButton onClick={() => { setUiPhase('create'); setSessionId(0); setGameState(null); }} variant="solid-indigo">Exit</WoodButton>
+                <WoodButton onClick={() => { setUiPhase('create'); setSessionId(0); setGameState(null); }} variant="green">Exit</WoodButton>
               </div>
             </div>
-          </WoodPanel>
+          </div>
         </div>
-
-        <p style={{ fontSize: '0.65rem', color: 'rgba(200,180,140,0.45)', textAlign: 'center', fontFamily: 'var(--font-serif)', letterSpacing: '0.02em', padding: '0 1rem 1.5rem' }}>
-          Powered by ZK Magic &amp; Stellar Game Studio
-        </p>
       </div>
     );
   }
@@ -1621,11 +1622,11 @@ export function HerbalMoonlightGame({
                 </div>
                 <div style={{ width: 1, height: 20, background: 'rgba(140,100,220,0.2)' }} />
                 <span style={{ fontFamily: 'var(--font-body)', fontSize: '0.62rem', fontWeight: 700, padding: '0.2rem 0.55rem', borderRadius: 999, color: uiPhase === 'garden-setup' ? '#c4b5fd' : (gameState.phase === GamePhase.Playing ? '#a5b4fc' : '#f0c850'), background: uiPhase === 'garden-setup' ? 'rgba(99,102,241,0.15)' : (gameState.phase === GamePhase.Playing ? 'rgba(99,102,241,0.2)' : 'rgba(201,168,76,0.2)') }}>
-                  {uiPhase === 'garden-setup' ? '\uD83C\uDF3F Garden Setup' : (gameState.phase === GamePhase.Playing ? '\uD83D\uDC7B Creature Turn' : '\uD83C\uDF3F ZK Reveal')}
+                  {uiPhase === 'garden-setup' ? 'Garden Setup' : (gameState.phase === GamePhase.Playing ? 'Creature Turn' : 'ZK Reveal')}
                 </span>
                 {uiPhase === 'play' && gameState.damage_reduction > 0 && (
                   <span style={{ fontSize: '0.62rem', fontWeight: 700, padding: '0.2rem 0.5rem', borderRadius: 999, background: 'rgba(78,205,196,0.15)', border: '1px solid rgba(78,205,196,0.35)', color: '#4ecdc4' }}>
-                    {'\uD83C\uDF38'} Calming Mist
+                    Calming Mist
                   </span>
                 )}
                 {uiPhase === 'play' && (
@@ -1644,18 +1645,49 @@ export function HerbalMoonlightGame({
                   <span style={{ fontFamily: 'var(--font-body)', fontSize: '0.55rem', fontWeight: 700, color: '#c4b5fd', letterSpacing: '0.08em', textTransform: 'uppercase' as const }}>Gardener</span>
                   <div style={{ width: '100%', height: 1, background: 'rgba(140,100,220,0.12)' }} />
                   {([1, 2, 3] as const).map(pType => (
-                    <div key={pType} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, width: '100%' }}>
+                    <button
+                      key={pType}
+                      onClick={uiPhase === 'garden-setup' ? () => setSelectedPlantType(pType) : undefined}
+                      style={{
+                        all: 'unset',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: 2,
+                        width: '100%',
+                        padding: '0.4rem',
+                        borderRadius: '0.35rem',
+                        cursor: uiPhase === 'garden-setup' ? 'pointer' : 'default',
+                        border: selectedPlantType === pType && uiPhase === 'garden-setup' ? '2px solid rgba(255, 215, 0, 0.7)' : '2px solid transparent',
+                        boxShadow: selectedPlantType === pType && uiPhase === 'garden-setup' ? '0 0 12px rgba(255, 215, 0, 0.4), inset 0 0 8px rgba(255, 215, 0, 0.2)' : 'none',
+                        transition: 'all 0.2s ease',
+                      }}
+                      title={
+                        uiPhase === 'garden-setup'
+                          ? pType === 1 ? 'Lavender · 1 DMG · Calming essence'
+                            : pType === 2 ? 'Mint · 2 DMG · Fresh strike'
+                            : 'Mandrake · 3 DMG · Root force'
+                          : PLANT_NAMES[pType]
+                      }
+                    >
                       <img
                         src={pType === 1 ? '/assets/lavender2.png' : pType === 2 ? '/assets/mint2.png' : '/assets/mandrake2.png'}
                         alt={PLANT_NAMES[pType]}
                         draggable={false}
-                        style={{ height: 'clamp(34px, 7vw, 52px)', imageRendering: 'pixelated', filter: 'drop-shadow(0 0 5px rgba(140,80,200,0.3))' }}
+                        style={{
+                          height: 'clamp(34px, 7vw, 52px)',
+                          imageRendering: 'pixelated',
+                          filter: selectedPlantType === pType && uiPhase === 'garden-setup' 
+                            ? 'drop-shadow(0 0 8px rgba(255, 215, 0, 0.8))' 
+                            : 'drop-shadow(0 0 5px rgba(140,80,200,0.3))',
+                          transition: 'filter 0.2s ease',
+                        }}
                       />
                       <span style={{ fontSize: '0.72rem', color: 'rgba(200,180,255,0.9)', fontWeight: 700 }}>
                         {isGardener && plantsByType ? `${plantsByType[pType]}/${perTypeMax}` : '?/?'}
                       </span>
                       <span style={{ fontSize: '0.6rem', color: 'rgba(180,155,220,0.62)', fontWeight: 500 }}>{PLANT_NAMES[pType]}</span>
-                    </div>
+                    </button>
                   ))}
                 </div>
 
@@ -1667,16 +1699,13 @@ export function HerbalMoonlightGame({
                         {renderGardenEditor()}
                         <WoodButton
                           onClick={handleCommitGarden}
-                          disabled={isBusy || countPlants(garden) === 0}
+                          disabled={isBusy || !canSealGarden()}
                           variant="green"
                         >
                           {loading
-                            ? <span className="magic-loading">{'\u2736'} Sealing Garden{'\u2026'}</span>
-                            : '\uD83C\uDF3F Seal Garden'}
+                            ? <span className="magic-loading">Sealing Garden...</span>
+                            : 'Seal Garden'}
                         </WoodButton>
-                        <p style={dimTextStyle}>
-                          Click to plant &mdash; click again to remove. The bottom row is your home.
-                        </p>
                       </>
                     ) : (
                       <div style={{ ...glassPanel, textAlign: 'center', padding: '1.5rem 1rem', width: '100%' }}>
@@ -1686,27 +1715,35 @@ export function HerbalMoonlightGame({
                           style={{ width: 72, height: 72, objectFit: 'contain', imageRendering: 'pixelated' as const, margin: '0 auto 0.75rem', display: 'block', filter: 'drop-shadow(0 0 16px rgba(201,168,76,0.4))' }}
                         />
                         <h3 style={{ fontFamily: 'var(--font-serif)', fontSize: '1rem', color: 'var(--color-ink)', margin: '0 0 0.5rem', lineHeight: 1.5, textAlign: 'center' }}>
-                          {isCreature ? '\u23f3 Awaiting Gardener\u2026' : '\uD83C\uDF3F Garden Sealed!'}
+                          {isCreature ? 'Awaiting Gardener...' : 'Garden Sealed!'}
                         </h3>
                         <p style={{ fontSize: '0.78rem', color: 'var(--color-ink-muted)', margin: '0 0 1rem', maxWidth: 320, textAlign: 'center', lineHeight: 1.6 }}>
                           {isCreature
                             ? 'The Gardener is planting magical herbs. The match will begin shortly.'
-                            : 'Syncing with the contract\u2026'}
+                            : 'Syncing with the contract...'}
                         </p>
                         <div style={{ display: 'inline-block', padding: '0.35rem 1rem', borderRadius: 999, background: 'rgba(201,168,76,0.15)', fontFamily: 'var(--font-body)', fontSize: '0.72rem', fontWeight: 600, color: 'var(--color-accent)', animation: 'fadeUp 1.5s ease-in-out infinite alternate' }}>
-                          <span className="magic-loading">{'\u2736'} Polling\u2026</span>
+                          <span className="magic-loading">Polling...</span>
                         </div>
                       </div>
                     )
                   ) : (
                     <>
-                      {renderGameBoard(true, isGardener)}
+                      {/* ZK privacy: once garden is sealed, Gardener cannot see their own plants.
+                          The layout is committed on-chain — revealing it here would break the ZK guarantee. */}
+                      {renderGameBoard(true, false)}
 
                       {/* ZK Proof progress bar */}
                       {revealingCell && (
                         <div style={{ width: '100%', padding: '0.4rem 0.6rem', background: 'rgba(30,15,60,0.88)', border: '1px solid rgba(167,139,250,0.3)', borderRadius: 10, animation: 'fadeUp 0.3s ease both' }}>
                           <div style={{ fontSize: '0.6rem', color: '#c4b5fd', marginBottom: '0.3rem' }}>
-                            <span className="magic-loading">{'\u26A1'} Invoking ZK protection\u2026</span>
+                            <span className="magic-loading">
+                              {zkProofStep === 1 && 'Hashing garden layout...'}
+                              {zkProofStep === 2 && 'Encoding coordinates...'}
+                              {zkProofStep === 3 && 'Generating ZK Proof...'}
+                              {zkProofStep === 4 && 'Submitting to chain...'}
+                              {zkProofStep === 0 && 'Preparing ZK Proof...'}
+                            </span>
                           </div>
                           <div style={{ height: 3, borderRadius: 2, background: 'rgba(255,255,255,0.07)', overflow: 'hidden' }}>
                             <div style={{ height: '100%', width: `${Math.min(100, zkProofStep * 25)}%`, background: 'linear-gradient(90deg, #7c3aed, #db2777)', transition: 'width 0.55s ease', borderRadius: 2 }} />
@@ -1719,13 +1756,13 @@ export function HerbalMoonlightGame({
                         <p style={{ fontSize: '0.7rem', color: 'rgba(220,210,255,0.82)', margin: 0, lineHeight: 1.5 }}>
                           {isCreature && gameState.phase === GamePhase.Playing
                             ? (gameState.creature_y === 0
-                              ? '\uD83D\uDC7B Choose a column to enter the garden'
-                              : '\uD83D\uDC7B Step into a lit cell')
+                              ? 'Choose a column to enter the garden'
+                              : 'Step into a lit cell')
                             : isGardener && gameState.phase === GamePhase.WaitingForProof
                             ? revealingCell
-                              ? '\u26A1 Invoking ZK protection\u2026'
-                              : '\u2728 Preparing the reveal\u2026'
-                            : '\u23F3 Waiting for the other player\u2026'}
+                              ? 'Generating ZK Proof...'
+                              : 'Preparing reveal...'
+                            : 'Waiting for opponent...'}
                         </p>
                       </div>
 
@@ -1736,7 +1773,7 @@ export function HerbalMoonlightGame({
                             onClick={() => setZkDetailsOpen(v => !v)}
                             style={{ all: 'unset', boxSizing: 'border-box', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(30,15,60,0.5)', border: '1px solid rgba(167,139,250,0.2)', borderRadius: zkDetailsOpen ? '8px 8px 0 0' : 8, padding: '0.28rem 0.55rem', cursor: 'pointer', color: 'rgba(196,181,253,0.7)', fontSize: '0.6rem', fontFamily: 'monospace' }}
                           >
-                            <span>{'\uD83D\uDD10'} ZK Details</span>
+                            <span>ZK Details</span>
                             <span style={{ fontSize: '0.48rem', opacity: 0.6 }}>{zkDetailsOpen ? '\u25B2' : '\u25BC'}</span>
                           </button>
                           {zkDetailsOpen && (
@@ -1763,8 +1800,11 @@ export function HerbalMoonlightGame({
                 <div style={{ padding: '0.75rem 0.75rem 0.75rem 0.4rem', borderLeft: '1px solid rgba(140,100,220,0.12)', display: 'flex', flexDirection: 'column', gap: '0.45rem', alignItems: 'center', minWidth: 0, overflow: 'hidden' }}>
                   <img src={CREATURE_IMG} alt="Creature" draggable={false} style={{ height: 'clamp(30px, 5vw, 44px)', imageRendering: 'pixelated', filter: 'drop-shadow(0 0 8px rgba(255,213,79,0.4))' }} />
                   <span style={{ fontFamily: 'var(--font-body)', fontSize: '0.55rem', fontWeight: 700, color: '#fde68a', letterSpacing: '0.08em', textTransform: 'uppercase' as const }}>Creature</span>
-                  <div style={{ fontSize: '1.1rem', fontWeight: 700, color: displayedCreatureHp <= 2 ? '#f87171' : '#fde68a', textShadow: `0 0 12px ${displayedCreatureHp <= 2 ? 'rgba(248,113,113,0.6)' : 'rgba(253,230,138,0.5)'}` }}>
-                    HP {displayedCreatureHp}
+                  <div style={{ fontSize: '1.1rem', fontWeight: 700, color: effectiveCreatureHp <= 2 ? '#f87171' : '#fde68a', textShadow: `0 0 12px ${effectiveCreatureHp <= 2 ? 'rgba(248,113,113,0.6)' : 'rgba(253,230,138,0.5)'}` }}>
+                    HP {effectiveCreatureHp}
+                    {spiritSenseHpCost > 0 && (
+                      <span style={{ fontSize: '0.65rem', color: 'rgba(248,113,113,0.7)', marginLeft: 4 }}>(-{spiritSenseHpCost})</span>
+                    )}
                   </div>
                   <div style={{ width: '100%', height: 1, background: 'rgba(140,100,220,0.12)' }} />
                   <span style={{ fontFamily: 'var(--font-body)', fontSize: '0.62rem', fontWeight: 600, color: 'rgba(200,180,255,0.55)', textTransform: 'uppercase' as const, letterSpacing: '0.08em' }}>Abilities</span>
@@ -1772,14 +1812,14 @@ export function HerbalMoonlightGame({
                   {/* Smell */}
                   <button
                     onClick={() => handleSpiritSense('smell')}
-                    disabled={!isCreature || gameState.phase !== GamePhase.Playing || displayedCreatureHp <= 1 || spiritSenseLoading || isBusy}
+                    disabled={!isCreature || gameState.phase !== GamePhase.Playing || effectiveCreatureHp <= 1 || spiritSenseLoading || isBusy}
                     title="Count plants in next 2 rows — costs 1 HP"
                     style={{
                       all: 'unset', boxSizing: 'border-box',
                       width: '100%', padding: '0.4rem 0.3rem', borderRadius: 9,
                       border: '1px solid rgba(167,139,250,0.22)',
                       background: (!isCreature || gameState.phase !== GamePhase.Playing) ? 'rgba(15,8,32,0.4)' : 'rgba(60,30,120,0.35)',
-                      cursor: (!isCreature || gameState.phase !== GamePhase.Playing || displayedCreatureHp <= 1 || isBusy) ? 'not-allowed' : 'pointer',
+                      cursor: (!isCreature || gameState.phase !== GamePhase.Playing || effectiveCreatureHp <= 1 || isBusy) ? 'not-allowed' : 'pointer',
                       display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
                       opacity: (!isCreature || gameState.phase !== GamePhase.Playing) ? 0.4 : 1,
                       transition: 'opacity 0.2s',
@@ -1793,14 +1833,14 @@ export function HerbalMoonlightGame({
                   {/* Instinct / Peek */}
                   <button
                     onClick={() => handleSpiritSense('peek')}
-                    disabled={!isCreature || gameState.phase !== GamePhase.Playing || displayedCreatureHp <= 1 || spiritSenseLoading || isBusy}
+                    disabled={!isCreature || gameState.phase !== GamePhase.Playing || effectiveCreatureHp <= 1 || spiritSenseLoading || isBusy}
                     title="Peek at adjacent cells — costs 1 HP"
                     style={{
                       all: 'unset', boxSizing: 'border-box',
                       width: '100%', padding: '0.4rem 0.3rem', borderRadius: 9,
                       border: '1px solid rgba(167,139,250,0.22)',
                       background: (!isCreature || gameState.phase !== GamePhase.Playing) ? 'rgba(15,8,32,0.4)' : 'rgba(60,30,120,0.35)',
-                      cursor: (!isCreature || gameState.phase !== GamePhase.Playing || displayedCreatureHp <= 1 || isBusy) ? 'not-allowed' : 'pointer',
+                      cursor: (!isCreature || gameState.phase !== GamePhase.Playing || effectiveCreatureHp <= 1 || isBusy) ? 'not-allowed' : 'pointer',
                       display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
                       opacity: (!isCreature || gameState.phase !== GamePhase.Playing) ? 0.4 : 1,
                       transition: 'opacity 0.2s',
@@ -1818,29 +1858,23 @@ export function HerbalMoonlightGame({
                         <span style={{ color: '#fde68a' }}>Garden not found</span>
                       ) : spiritSenseResult.ability === 'smell' ? (
                         <span style={{ color: spiritSenseResult.count > 0 ? '#fde68a' : '#86efac' }}>
-                          {spiritSenseResult.count === 0 ? '\u2714 Clear ahead' : `\uD83C\uDF3F ${spiritSenseResult.count} plant(s) nearby`}
+                          {spiritSenseResult.count === 0 ? 'Clear ahead' : `${spiritSenseResult.count} plant(s) nearby`}
                         </span>
                       ) : (
                         <div>
-                          <div style={{ color: spiritSenseResult.left === 'PLANT' ? '#86efac' : '#a78bfa' }}>L: {spiritSenseResult.left === 'PLANT' ? '\uD83C\uDF3F Plant' : spiritSenseResult.left === 'empty' ? '\u25CB Clear' : 'N/A'}</div>
-                          <div style={{ color: spiritSenseResult.right === 'PLANT' ? '#86efac' : '#a78bfa' }}>R: {spiritSenseResult.right === 'PLANT' ? '\uD83C\uDF3F Plant' : spiritSenseResult.right === 'empty' ? '\u25CB Clear' : 'N/A'}</div>
+                          <div style={{ color: spiritSenseResult.left === 'PLANT' ? '#86efac' : '#a78bfa' }}>L: {spiritSenseResult.left === 'PLANT' ? 'Plant' : spiritSenseResult.left === 'empty' ? 'Clear' : 'N/A'}</div>
+                          <div style={{ color: spiritSenseResult.right === 'PLANT' ? '#86efac' : '#a78bfa' }}>R: {spiritSenseResult.right === 'PLANT' ? 'Plant' : spiritSenseResult.right === 'empty' ? 'Clear' : 'N/A'}</div>
                         </div>
                       )}
                     </div>
                   )}
                   {spiritSenseLoading && (
-                    <span className="magic-loading" style={{ fontSize: '0.58rem', color: '#c4b5fd' }}>{'\u26A1'} Sensing\u2026</span>
+                    <span className="magic-loading" style={{ fontSize: '0.58rem', color: '#c4b5fd' }}>Sensing...</span>
                   )}
                 </div>
               </div>
 
-              {/* Footer: error / success */}
-              {(error || success) && (
-                <div style={{ padding: '0.45rem 0.75rem', borderTop: '1px solid rgba(140,100,220,0.12)' }}>
-                  {error && <p style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--color-error)', margin: 0 }}>{error}</p>}
-                  {success && <p style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--color-success)', margin: 0 }}>{success}</p>}
-                </div>
-              )}
+              {/* Error/success shown in the banner above the panel — no duplicate here */}
             </div>
           );
         })()}
