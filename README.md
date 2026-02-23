@@ -4,7 +4,7 @@
   <!-- Replace with gameplay screenshot or GIF before submission -->
   <!-- ![Gameplay](docs/assets/hero.gif) -->
 
-  **Asymmetric ZK strategy · Stellar Soroban · Privacy-first gaming**
+  **Asymmetric ZK strategy · Stellar Game Studio · Privacy-first gaming**
 
   [![Deployed on Testnet](https://img.shields.io/badge/Stellar-Testnet-5c67f2?logo=stellar&logoColor=white)](https://stellar.expert/explorer/testnet/contract/CCHDXLBZ73N7XHZKAEH3G6K3NQELAYASM3XU46A2TWHQX5AASEPN7WY2)
   [![Protocol 25](https://img.shields.io/badge/Soroban-Protocol%2025-7c3aed)](https://soroban.stellar.org)
@@ -36,7 +36,7 @@ The tension: you know exactly where every plant is. The Ghost has no idea. Every
 
 You enter from the top of the board with no map. Every step forward could be empty soil — or a Mandrake root that drains 3 HP in one hit. You can't see the plants. You can't see the damage coming. You win if you reach row 4 alive.
 
-Use **Spirit Sense** to buy information: spend 1 HP to peek at adjacent cells, or smell out how many plants lurk in the next two rows. It costs you HP you might not have.
+Use information wisely: the Ghost navigates under complete fog of war. Future versions will include Spirit Sense abilities to buy information by spending HP.
 
 The tension: the garden is reading you. The Witch placed those plants specifically to punish the most logical paths.
 
@@ -62,7 +62,7 @@ A Full Moon turns a Mandrake from a 3-hit kill into a 2-hit kill. A New Moon mak
 
 ---
 
-## Why ZK Is Essential (Not Decorative)
+## Why ZK Is Essential 
 
 Without Zero-Knowledge proofs, this game cannot exist in a trustless form.
 

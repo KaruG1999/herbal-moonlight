@@ -1313,7 +1313,7 @@ Current Spirit Sense (Smell, Peek) is:
 - ⏳ Mini-proof guest circuits need implementation
 - ⏳ Contract handlers for spirit_sense_peek() and spirit_sense_smell() need implementation
 
-**Impact:** Spirit Sense is a "nice-to-have" (PENDING_FEATURES.md priority 2). Core game (commit/reveal) is fully implemented.
+**Impact:** Spirit Sense is a post-MVP feature. Core game (commit/reveal) is fully implemented and deployed.
 
 ---
 
@@ -1398,9 +1398,9 @@ Padding (36 bytes) could be removed. Minor optimization opportunity.
 
 ---
 
-## SECTION 9: MISSING FEATURES (PENDING_FEATURES.md RECONCILIATION)
+## SECTION 9: MVP COMPLETION STATUS
 
-**Document:** [docs/PENDING_FEATURES.md](docs/PENDING_FEATURES.md) (317 lines)
+**Current Release:** MVP deployed on Stellar Testnet
 
 ### Priority 1 (High Impact, Low Effort)
 

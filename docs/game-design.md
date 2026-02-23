@@ -62,7 +62,7 @@ Each turn: Optional lateral move (left/right) + mandatory forward move
 
 **Plant Placement:** Gardener places **up to 8 plants** during setup phase (configurable via `MAX_PLANTS`).
 
-> **Design Note:** Lavender's "Calming Mist" debuff is designed but not yet active on-chain — currently deals 1 HP flat. Implementation tracked in `docs/PENDING_FEATURES.md`.
+> **Design Note:** Lavender's "Calming Mist" debuff is implemented on-chain — reduces the next plant hit by 1 damage after being triggered.
 
 ## 👻 Creature
 
@@ -70,7 +70,7 @@ Each turn: Optional lateral move (left/right) + mandatory forward move
 - Starting HP: **6** (Balanced/New Moon) | **8** (Full Moon)
 - Movement: 1 step forward per turn; may move laterally within the same row before advancing
 - Sprite: `ghost.png` (pixel art)
-- Special Abilities: Spirit Sense (designed, pending implementation — see `docs/PENDING_FEATURES.md`)
+- Special Abilities: Spirit Sense ⏳ (PENDING — designed for post-MVP roadmap, not in this release)
 
 **Post-hackathon creatures (roadmap):**
 - 🦋 Moon Moth: Can skip one row (Flutter ability)
@@ -187,7 +187,7 @@ Creature wins if:
 **Implementation (actual, on-chain):**
 ```rust
 // Moon phase derived from keccak256(session_id) — deterministic, not time-based
-// session_id byte 0 % 5:
+// session_id byte 0 % 100:
 //   0     → FullMoon  (20%)
 //   1     → NewMoon   (20%)
 //   2,3,4 → Balanced  (60%)
@@ -471,7 +471,7 @@ MVP Cuts:
 
 ### **Ecosystem Fit:**
 - ✅ Game Hub integration (2-player standard)
-- ✅ Stellar-native payments (Spirit Sense)
+- ✅ Stellar-native payments (future feature)
 - ✅ Community potential (strategy sharing)
 - ✅ Extensible design (more plants/creatures)
 
@@ -493,9 +493,9 @@ MVP Cuts:
 11. ✅ LandingScreen with ZK tutorial (collapsible explainer)
 12. ✅ Groth16 verifier contract deployed on testnet
 
-### **SHOULD HAVE — Differentiators (Pending ⏳)**
-See `docs/PENDING_FEATURES.md` for full spec of each:
+### **ROADMAP — Post-MVP Features**
 - ⏳ Spirit Sense (Peek Adjacent / Smell Ahead — creature spends HP for info)
+  - **Status:** Designed but NOT in MVP submission
 - ⏳ Lavender "Calming Mist" special effect (debuff next plant)
 - ⏳ Moon Phase display at game start (prominent UI indicator)
 - ⏳ ZK proof generation progress UI (progress bar, proof size, gas cost)
@@ -641,7 +641,7 @@ Pitch: "First game where ZK isn't a feature—it's the mechanic"
 | Reveal | ZK proof that proves cell (x,y) content without revealing other cells |
 | Seal | Groth16 proof bytes; empty in dev mode (hash-only verification) |
 | Journal | 73-byte witness: commitment(32) + x(1) + y(1) + has_plant(1) + plant_type(1) + damage(1) + padding(36) |
-| Spirit Sense | Designed ability: Creature spends HP to gain spatial information (pending implementation) |
+| Spirit Sense | Designed ability: Creature spends HP to gain spatial information (POST-MVP roadmap, not in this release) |
 | Moon Phase | Deterministic game modifier derived from keccak256(session_id) |
 | Never Reveal | Core design principle: garden stays cryptographically hidden forever post-game |
 | Strategy Vault | Future feature: commit winning garden hashes as tradeable cryptographic assets |

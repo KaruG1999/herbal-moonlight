@@ -51,10 +51,12 @@ Initializes the contract with Game Hub and ZK verifier addresses.
 
 #### `reveal_cell(session_id, journal_bytes, journal_hash, seal)`
 - Only Gardener can reveal
-- Verifies ZK proof (TODO: pending verifier implementation)
-- Applies damage based on moon phase
+- Verifies journal against stored garden commitment
+- Applies moon-adjusted damage based on plant type (contract authority)
 - Checks win conditions
 - Calls Game Hub `end_game` if game finished
+- **Dev Mode:** SHA-256 verification only
+- **Production Mode:** Groth16 proof verification via BN254 verifier (CAP-0074)
 
 #### `get_session(session_id)`
 Returns the complete game state for UI consumption.
@@ -85,10 +87,15 @@ WaitingForCommitment → Playing ↔ WaitingForProof → Finished
 
 ## ZK Proof Verification
 
-Currently uses a **TODO placeholder** for Groth16 verification:
-- Verifies proof against RiscZero circuit
-- Extracts garden commitment, cell reveal from journal
-- Pending implementation of verifier contract (CAP-0074 BN254 primitives)
+**Dev Mode (Current - MVP):** Uses SHA-256 verification
+- Verifies garden commitment integrity
+- Validates journal against stored hash
+- Ensures positional correctness
+
+**Production Mode (Roadmap):** Uses Groth16 verification
+- Integrates with RiscZero circuit (zk-prover module)
+- Verifies proof using bn254_multi_pairing_check (CAP-0074 BN254 primitives)
+- Extracts garden commitment and cell reveal data from journal
 
 ## Game Hub Integration
 
