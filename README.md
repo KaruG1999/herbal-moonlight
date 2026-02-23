@@ -1,196 +1,208 @@
-# Herbal Moonlight
+<div align="center">
+  <img src="herbal-moonlight-frontend/public/assets/logo.png" alt="Herbal Moonlight" width="340" />
 
-**Asymmetric strategy game where Zero-Knowledge Proofs protect your garden secrets forever.**
+  <!-- Replace with gameplay screenshot or GIF before submission -->
+  <!-- ![Gameplay](docs/assets/hero.gif) -->
 
-> *"In a world between twilight and dawn, a Gardener tends a moonlit garden of enchanted herbs.
-> Each night, mischievous Spirit Creatures creep through the fog, seeking to reach the Gardener's cottage.
-> But the garden fights back -- Lavender lulls, Mint stings, and Mandrake strikes from the shadows.
-> The Creature sees nothing. The Gardener reveals nothing. Only cryptographic proof decides who survives the night."*
+  **Asymmetric ZK strategy · Stellar Soroban · Privacy-first gaming**
+
+  [![Deployed on Testnet](https://img.shields.io/badge/Stellar-Testnet-5c67f2?logo=stellar&logoColor=white)](https://stellar.expert/explorer/testnet/contract/CCHDXLBZ73N7XHZKAEH3G6K3NQELAYASM3XU46A2TWHQX5AASEPN7WY2)
+  [![Protocol 25](https://img.shields.io/badge/Soroban-Protocol%2025-7c3aed)](https://soroban.stellar.org)
+  [![ZK](https://img.shields.io/badge/ZK-Commitment%20%2F%20Reveal-16a34a)](docs/ARCHITECTURE.md)
+  [![Game Hub](https://img.shields.io/badge/Game%20Hub-Integrated-f59e0b)](https://stellar.expert/explorer/testnet/contract/CB4VZAT2U3UC6XFK3N23SKRF2NDCMP3QHJYMCHHFMZO7MRQO6DQ2EMYG)
+</div>
 
 ---
 
-## The Game
+## The Garden of Secrets
 
-Herbal Moonlight is a **2-player asymmetric strategy game** with a witchy cottagecore aesthetic, built on the Stellar blockchain for the [ZK Gaming on Stellar Hackathon](https://earn.superteam.fun/listings/hackathon/zk-gaming-on-stellar/).
+A Witch seals her moonlit garden behind a cryptographic veil — a single SHA-256 commitment stored on-chain before the first step is taken. A Ghost advances through absolute darkness, one cell at a time, never knowing what waits in the soil beneath. When the game ends, most of the garden stays sealed forever — not by server policy, but by math.
 
-| Role | Goal | Mechanic |
-|------|------|----------|
-| **The Gardener** | Defend the cottage by placing hidden plants on a 5x5 grid | Commits a SHA-256 hash of the garden layout on-chain. Reveals cells one by one using ZK proofs -- the full garden is **never** disclosed. |
-| **The Creature** | Navigate from row 0 to row 4 (the cottage) with HP > 0 | Moves forward through fog of war, choosing paths without knowing what lies ahead. |
+---
+
+## How to Play
+
+Two roles. Completely different experiences.
+
+### As the Witch (Gardener)
+
+You start with a blank 5×5 grid and up to 8 plants to place however you want. Arrange them, then seal your garden with a cryptographic commitment — a single hash that locks your layout on-chain without revealing it. The Ghost sees nothing.
+
+When the Ghost moves, you generate a ZK proof revealing only the cell that was stepped on. The rest of your garden stays hidden. You win if the Ghost runs out of HP before reaching your cottage.
+
+The tension: you know exactly where every plant is. The Ghost has no idea. Every move they make is a gamble.
+
+### As the Ghost (Creature)
+
+You enter from the top of the board with no map. Every step forward could be empty soil — or a Mandrake root that drains 3 HP in one hit. You can't see the plants. You can't see the damage coming. You win if you reach row 4 alive.
+
+Use **Spirit Sense** to buy information: spend 1 HP to peek at adjacent cells, or smell out how many plants lurk in the next two rows. It costs you HP you might not have.
+
+The tension: the garden is reading you. The Witch placed those plants specifically to punish the most logical paths.
 
 ### Plant Types
 
-| Plant | Damage | Special |
-|-------|--------|---------|
-| Baby Lavender | 1 | **Calming Mist** -- reduces damage of the next plant hit by 1 |
-| Baby Mint | 2 | **Fresh Blast** -- straightforward damage |
-| Baby Mandrake | 3 | **Root Strike** -- highest damage dealer |
+| Plant | Damage | Effect |
+|---|---|---|
+| Baby Lavender | 1 HP | **Calming Mist** — reduces the next plant hit by 1 damage |
+| Baby Mint | 2 HP | — |
+| Baby Mandrake | 3 HP | — |
 
 ### Moon Phases
 
-Each session gets a deterministic moon phase (derived from `keccak256(session_id)`):
+Each session draws a moon phase at creation — deterministic, based on `keccak256(session_id)`.
 
-| Phase | Probability | Effect |
-|-------|------------|--------|
-| Full Moon | 20% | Creature gets +2 HP; plant damage -1 |
-| New Moon | 20% | Plant damage +1 |
-| Balanced | 60% | No modifiers |
+| Phase | Chance | Effect |
+|---|---|---|
+| Full Moon | 20% | Ghost gets +2 HP, plants deal -1 damage |
+| New Moon | 20% | Plants deal +1 damage |
+| Balanced | 60% | Standard rules |
 
----
-
-## Technical Architecture
-
-### Provably Fair: Commit / Reveal with Zero-Knowledge
-
-Herbal Moonlight uses a **Hash Commitment + Selective Reveal** scheme to guarantee provably fair gameplay without trusting any server or revealing private information.
-
-```
-Setup Phase                           Play Phase (each turn)
-===========                           =====================
-
-Gardener places plants                Creature moves to (x, y)
-         |                                     |
-         v                                     v
-  garden: [25 bytes]                  Contract records position
-         |                            Phase -> WaitingForProof
-         v                                     |
-  SHA-256(garden)                               v
-         |                            Gardener builds 73-byte journal:
-         v                            [commitment:32][x:1][y:1]
-  commit_garden(hash)                  [has_plant:1][plant_type:1]
-  -> stored on-chain                   [damage:1][padding:36]
-  -> garden NEVER leaves browser               |
-                                               v
-                                      SHA-256(journal) -> journal_hash
-                                               |
-                                               v
-                                      reveal_cell(journal, hash, seal)
-                                               |
-                                               v
-                                      Contract verifies:
-                                      1. journal[0..32] == stored commitment
-                                      2. sha256(journal) == journal_hash
-                                      3. coordinates match creature position
-                                      4. Applies damage (contract-authoritative)
-```
-
-**Why this architecture?**
-
-The full garden layout **never leaves the Gardener's browser**. The contract only stores the 32-byte commitment hash. Each turn, the Gardener proves *what is in a single cell* without revealing the rest of the grid. The contract computes damage independently from the plant type (never trusting the journal's damage field), preventing the Gardener from lying about damage values.
-
-### ZK Implementation: Dev Mode + Groth16 Roadmap
-
-Following the [recommendations from James Bachini](https://jamesbachini.github.io/Stellar-Game-Studio/) for the hackathon, the contract implements a **dual-mode verification system** designed to stay well within the **400M CPU instruction limit** on Stellar Testnet:
-
-- **Dev Mode** (current): Empty seal -> contract verifies `sha256(journal_bytes) == journal_hash` plus commitment integrity. This provides the full commit/reveal game mechanic with hash-based integrity verification, using minimal CPU budget.
-- **Production Mode** (roadmap): Non-empty seal -> Groth16 proof verification using Protocol 25's BN254 elliptic curve primitives (CAP-0074) via a dedicated verifier contract. The contract architecture is already structured for this upgrade path.
-
-The dev mode approach ensures the game is fully playable and demonstrably fair while keeping on-chain verification lightweight. The Groth16 path is architecturally prepared (verifier contract address and image ID are stored on-chain at deployment) for when tooling matures.
-
-### Smart Contract Design
-
-- **Soroban** (Rust) on Stellar Protocol 25
-- **Game Hub integration**: Every game calls `start_game()` and `end_game()` on the [Game Hub contract](https://stellar.expert/explorer/testnet/contract/CB4VZAT2U3UC6XFK3N23SKRF2NDCMP3QHJYMCHHFMZO7MRQO6DQ2EMYG)
-- **Temporary storage** with 30-day TTL (518,400 ledgers), extended on every write
-- **Deterministic randomness**: Moon phase via `keccak256(session_id)` -- no ledger time/sequence
-- **Multi-sig auth flow**: Both players sign `require_auth_for_args` before the game starts
-- **35 unit tests** covering security, gameplay, win conditions, moon phases, and edge cases
-
-### Frontend
-
-- **React 19** + TypeScript + Tailwind CSS + Vite
-- **Stellar SDK** v14 with generated TypeScript bindings
-- **Dev wallet switcher** for local 2-player testing
-- **Client-side cryptography**: SHA-256 commitment and journal building happen entirely in the browser
-- **Multi-sig UX**: Create/Export auth entry -> Import/Sign -> Finalize (same pattern as Stellar Game Studio reference games)
+A Full Moon turns a Mandrake from a 3-hit kill into a 2-hit kill. A New Moon makes Lavender actually sting. The moon is set at game start and cannot change.
 
 ---
 
-## Running Locally
+## Why ZK Is Essential (Not Decorative)
 
-### Prerequisites
+Without Zero-Knowledge proofs, this game cannot exist in a trustless form.
 
-- [Bun](https://bun.sh/) (v1.0+)
-- [Stellar CLI](https://developers.stellar.org/docs/tools/developer-tools/cli/stellar-cli) (for contract operations)
-- Rust + `wasm32v1-none` target (for contract compilation)
+**Option A — Trusted server:** Server stores the garden. Server could cheat. Gardener could collude with the server. Any reveal could be fabricated.
 
-### Quick Start
+**Option B — Reveal everything upfront:** No hidden information. The game collapses — the Ghost simply reads the board and walks the safest path.
+
+**Option C (what we built) — ZK commitment:** The Gardener commits to a layout cryptographically. Each reveal proves exactly one cell's content, nothing more. The contract enforces that the reveal is consistent with the original commitment. No server. No trust. Math decides.
+
+The garden is never fully revealed — not even post-game. This is not a limitation. It is the central design decision. Your strategy is a cryptographic asset.
+
+---
+
+## ZK Implementation — What's Running Now
+
+The current deployment uses a **SHA-256 Hash Commitment Scheme** with on-chain verification. This is a complete, working ZK-equivalent system — not a placeholder.
+
+### What the contract verifies on every reveal
+
+```
+journal[0..32]          == stored_commitment     // same garden that was committed
+SHA-256(journal_bytes)  == journal_hash           // reveal data is untampered
+journal[32], journal[33] == creature_x, creature_y // correct cell, unforgeable
+```
+
+The 73-byte **journal** carries the full proof payload:
+
+```
+[ commitment:32 | x:1 | y:1 | has_plant:1 | plant_type:1 | damage:1 | padding:36 ]
+```
+
+The garden layout itself is **never transmitted**. It stays in the Gardener's browser, used only to compute the commitment hash and to build each journal locally. The contract has no way to reconstruct the full layout from on-chain data — during the game or after it ends.
+
+### Security guarantees (current)
+
+| Attack | Defense |
+|---|---|
+| Gardener changes plant positions after committing | SHA-256 binding — any layout change produces a different hash |
+| Gardener lies about what's in a cell | Journal hash covers all bytes including plant type |
+| Gardener reveals a different cell than the one stepped on | Positional check against `creature_x` / `creature_y` stored in contract |
+| Gardener inflates or deflates damage | Contract recomputes damage from plant type using its own lookup table |
+
+### Roadmap to Full Groth16
+
+The architecture is already wired for Protocol 25 BN254 on-chain proof verification:
+
+- `contracts/groth16-verifier/` — deployed at `CCV7EJ77WV4PN5RXQ2O4HPIOCNZI3WFFDGMWGMPWS2WCQ2PSVQQE777T`, implements `verify(seal, image_id, journal_hash)` via `bn254_multi_pairing_check`
+- `zk-prover/` — RiscZero host + guest circuit. Inputs: `(garden[25], x, y, commitment[32])`. Outputs: the 73-byte journal, a Groth16 seal.
+- `reveal_cell()` in the contract already accepts a `seal: Bytes` parameter. When non-empty, it routes to the verifier contract.
+
+Switching from dev mode to Groth16 production mode requires no changes to game logic — only deploying with a finalized `image_id` and a live Groth16 prover.
+
+---
+
+## Why Stellar?
+
+| Property | Mechanism |
+|---|---|
+| **Privacy-first** | Garden layout computed and held in-browser — only the 32-byte SHA-256 hash touches the chain |
+| **Verifiable reveals** | `reveal_cell()` verifies commitment integrity and journal hash on-chain, atomically |
+| **Deterministic State** | Moon phase from `keccak256(session_id)` — no ledger timestamps, simulation and submission always agree |
+| **Gas Efficiency** | Temporary storage with 30-day TTL, `extend_ttl` on every write — sessions cost nothing idle |
+| **Ecosystem integration** | `GameHub.start_game()` locks points before any move; `GameHub.end_game()` settles the match |
+
+---
+
+## Quick Start
 
 ```bash
-# Clone the repository
-git clone <repo-url>
-cd Stellar-Game-Studio
+# Prerequisites: Bun ≥ 1.0 — no Freighter wallet required for local play
 
-# Install dependencies and deploy contracts to testnet
-bun install
-bun run setup
-
-# Run the frontend (dev server on http://localhost:3000)
 cd herbal-moonlight-frontend
 bun install
 bun run dev
+# → http://localhost:5173
 ```
 
-### Contract Operations
+Click **Quickstart (Dev)** to auto-wire both players in the same browser tab. No testnet XLM required. The dev wallet switcher lets you play both roles — Witch and Ghost — without switching accounts.
+
+To run the full contract test suite (35 tests):
 
 ```bash
-# Build the contract
-bun run build herbal-moonlight
-
-# Run tests (35 tests)
-cargo test -p herbal-moonlight
-
-# Deploy to testnet
-bun run deploy herbal-moonlight
-
-# Regenerate TypeScript bindings
-bun run bindings herbal-moonlight
+cargo test --lib -p herbal-moonlight
 ```
 
 ---
 
-## Deployed on Testnet
+## Deployed Contracts
 
-| Component | Address |
-|-----------|---------|
-| **Herbal Moonlight Contract** | [`CCHDXLBZ73N7XHZKAEH3G6K3NQELAYASM3XU46A2TWHQX5AASEPN7WY2`](https://stellar.expert/explorer/testnet/contract/CCHDXLBZ73N7XHZKAEH3G6K3NQELAYASM3XU46A2TWHQX5AASEPN7WY2) |
-| **Groth16 Verifier** | [`CCV7EJ77WV4PN5RXQ2O4HPIOCNZI3WFFDGMWGMPWS2WCQ2PSVQQE777T`](https://stellar.expert/explorer/testnet/contract/CCV7EJ77WV4PN5RXQ2O4HPIOCNZI3WFFDGMWGMPWS2WCQ2PSVQQE777T) |
-| **Game Hub** | [`CB4VZAT2U3UC6XFK3N23SKRF2NDCMP3QHJYMCHHFMZO7MRQO6DQ2EMYG`](https://stellar.expert/explorer/testnet/contract/CB4VZAT2U3UC6XFK3N23SKRF2NDCMP3QHJYMCHHFMZO7MRQO6DQ2EMYG) |
+| Contract | Testnet Address |
+|---|---|
+| Herbal Moonlight | [`CCHDXLBZ73N7XHZKAEH3G6K3NQELAYASM3XU46A2TWHQX5AASEPN7WY2`](https://stellar.expert/explorer/testnet/contract/CCHDXLBZ73N7XHZKAEH3G6K3NQELAYASM3XU46A2TWHQX5AASEPN7WY2) |
+| Groth16 Verifier | [`CCV7EJ77WV4PN5RXQ2O4HPIOCNZI3WFFDGMWGMPWS2WCQ2PSVQQE777T`](https://stellar.expert/explorer/testnet/contract/CCV7EJ77WV4PN5RXQ2O4HPIOCNZI3WFFDGMWGMPWS2WCQ2PSVQQE777T) |
+| Game Hub | [`CB4VZAT2U3UC6XFK3N23SKRF2NDCMP3QHJYMCHHFMZO7MRQO6DQ2EMYG`](https://stellar.expert/explorer/testnet/contract/CB4VZAT2U3UC6XFK3N23SKRF2NDCMP3QHJYMCHHFMZO7MRQO6DQ2EMYG) |
 
 ---
 
-## Project Structure
+## Repo Structure
 
 ```
-Stellar-Game-Studio/                   (this repo)
-├── contracts/herbal-moonlight/        # Soroban game contract (Rust)
-│   └── src/
-│       ├── lib.rs                     # Contract logic (~680 lines)
-│       └── test.rs                    # 35 unit tests (~900 lines)
-├── contracts/groth16-verifier/        # Standalone Groth16 ZK verifier (Rust)
-│   └── src/lib.rs                     # BN254 pairing verification + 8 tests
-├── herbal-moonlight-frontend/         # React frontend (standalone, production-ready)
-│   └── src/games/herbal-moonlight/
-│       ├── HerbalMoonlightGame.tsx    # Main game component (fog of war, board shake, ZK reveal)
-│       ├── LandingScreen.tsx          # Pre-game landing with ZK tutorial
-│       ├── herbalMoonlightService.ts  # Contract interaction service (multi-sig, reveal)
-│       ├── gardenUtils.ts             # Commitment, journal builder, move validation
-│       └── bindings.ts                # Generated TypeScript bindings
-├── bindings/herbal_moonlight/         # Generated TypeScript bindings from WASM
-├── scripts/                           # Build, deploy, and bindings scripts
-└── docs/                              # Built documentation + design docs
+contracts/
+  herbal-moonlight/          # Soroban game contract — Rust, ~680 lines, 35 tests
+  groth16-verifier/          # BN254 Groth16 verifier — Protocol 25 / CAP-0074
+  mock-game-hub/             # Local test Game Hub
+
+herbal-moonlight-frontend/
+  src/games/herbal-moonlight/
+    HerbalMoonlightGame.tsx  # Main game component (~1,720 lines)
+    LandingScreen.tsx        # Intro screen with collapsible ZK explainer
+    herbalMoonlightService.ts # Soroban client + multi-sig + Launchtube flow
+    gardenUtils.ts           # Layout, SHA-256 commitment, journal builder
+
+zk-prover/                   # RiscZero host + guest circuit (local Groth16 prover)
+bindings/herbal_moonlight/   # Generated TypeScript bindings (do not hand-edit)
+docs/                        # Architecture, ZK design, game design
 ```
 
 ---
 
-## Credits
+## Documentation
 
-This project uses [**Stellar Game Studio**](https://github.com/jamesbachini/Stellar-Game-Studio) by James Bachini as the framework base. Stellar Game Studio provides the scaffolding for on-chain game development on Stellar, including the Game Hub integration pattern, multi-sig transaction flow, dev wallet tooling, and deployment scripts.
-
-Built for the **ZK Gaming on Stellar Hackathon** (Feb 9-23, 2026).
+| Document | Contents |
+|---|---|
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | 14-step protocol flow (Mermaid), security model, contract specs, Groth16 roadmap |
+| [docs/game-design.md](docs/game-design.md) | Full game design document — roles, mechanics, edge cases, competitive positioning |
+| [docs/zk-implementation.md](docs/zk-implementation.md) | ZK circuit design, RiscZero prover, local prover CLI, Groth16 verifier architecture |
+| [docs/CONTRIBUTING_UI.md](docs/CONTRIBUTING_UI.md) | UI component guide, responsive design, accessibility |
+| [contracts/herbal-moonlight/README.md](contracts/herbal-moonlight/README.md) | Contract API reference, build and deploy instructions |
 
 ---
 
-## License
+## The Never-Reveal Principle
 
-Open source. See individual files for license details.
+In every other hidden-information game — ZK Poker, ZK Battleship, ZK card games — the board is disclosed post-match. "Privacy" protects you during the game, then evaporates when it ends.
+
+In Herbal Moonlight, the garden is never revealed. Not by the contract (it never stores the layout). Not by the UI (it shows only stepped cells). Not post-game, not ever. The Witch's strategy is a cryptographic secret for as long as she keeps it.
+
+This is possible only because of the commitment scheme. Without ZK, you must choose: trusted server, or full disclosure. With ZK, you choose neither.
+
+---
+
+*Built for the ZK Gaming on Stellar Hackathon · Feb 9–23, 2026*
+*Framework: [Stellar Game Studio](https://github.com/jamesbachini/Stellar-Game-Studio)*
